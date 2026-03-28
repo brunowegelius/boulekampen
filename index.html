@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Boulekampen</title>
+  <style>
+    @font-face {
+      font-family: 'Panchang';
+      src: url('assets/fonts/Panchang-Variable.ttf') format('truetype');
+      font-weight: 100 900;
+    }
+    @font-face {
+      font-family: 'NewBlack';
+      src: url('assets/fonts/NewBlackTypeface-Regular.ttf') format('truetype');
+      font-weight: normal;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      cursor: none;
+    }
+
+    .cursor {
+      position: fixed;
+      width: 14px;
+      height: 14px;
+      background: #ea2910;
+      border-radius: 50%;
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+      z-index: 9999;
+      transition: transform 0.08s ease;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #093000;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      padding: 24px;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    /* ── Logo slot ── */
+    .logo-slot {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .logo-slot svg {
+      width: 100%;
+      height: 100%;
+      fill: #f9ff00;
+    }
+
+    /* ── Card grid ── */
+    .grid {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .row {
+      display: flex;
+      gap: 12px;
+      flex: 1;
+      min-height: 0;
+    }
+
+    /* ── Base card ── */
+    .card {
+      background: #f9ff00;
+      color: #093000;
+      border-radius: 16px;
+      padding: 22px 26px 20px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      min-width: 0;
+    }
+
+    .card-title {
+      font-family: 'Panchang', sans-serif;
+      font-weight: 800;
+      font-size: clamp(13px, 1.6vw, 22px);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding-bottom: 10px;
+      margin-bottom: 12px;
+      border-bottom: 2px solid #093000;
+      flex-shrink: 0;
+    }
+
+    .card-body {
+      font-family: 'NewBlack', sans-serif;
+      font-size: clamp(14px, 1.4vw, 20px);
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Top row: 3 equal cards ── */
+    .row-top .card { flex: 1; }
+
+    /* ── Bottom row: 55 / 45 ── */
+    .card-schedule { flex: 55; }
+
+    .date-slot {
+      flex: 45;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .anmal-btn {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f9ff00;
+      color: #093000;
+      font-family: 'Panchang', sans-serif;
+      font-weight: 800;
+      font-size: clamp(16px, 2.8vw, 48px);
+      text-transform: uppercase;
+      letter-spacing: -0.01em;
+      line-height: 1;
+      border-radius: 16px;
+      text-decoration: none;
+      text-align: center;
+      padding: 0 20px;
+      min-height: 0;
+    }
+
+    .date-lines {
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      padding: 0 8px;
+    }
+
+    .date-line {
+      font-family: 'Panchang', sans-serif;
+      font-weight: 800;
+      font-size: clamp(24px, 4.5vw, 72px);
+      color: #f9ff00;
+      text-transform: uppercase;
+      line-height: 1.05;
+      letter-spacing: -0.01em;
+    }
+
+
+    /* ═══════════════════════════════
+       Card 1 — Nästa match
+    ═══════════════════════════════ */
+    .match-teams {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      flex: 1;
+    }
+
+    .match-team {
+      font-family: 'Panchang', sans-serif;
+      font-weight: 800;
+      font-size: clamp(16px, 2.2vw, 32px);
+      text-align: center;
+      line-height: 1.1;
+    }
+
+    .match-vs {
+      font-family: 'NewBlack', sans-serif;
+      font-size: clamp(11px, 1vw, 15px);
+      opacity: 0.45;
+      flex-shrink: 0;
+    }
+
+    .match-meta {
+      display: flex;
+      gap: 20px;
+      flex-shrink: 0;
+      margin-top: 12px;
+    }
+
+    .meta-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .meta-label {
+      font-family: 'NewBlack', sans-serif;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      opacity: 0.5;
+    }
+
+    .meta-value {
+      font-family: 'Panchang', sans-serif;
+      font-weight: 700;
+      font-size: clamp(13px, 1.4vw, 20px);
+    }
+
+    /* ═══════════════════════════════
+       Card 2 — Tabell
+    ═══════════════════════════════ */
+    .standings-table {
+      width: 100%;
+      border-collapse: collapse;
+      flex: 1;
+    }
+
+    .standings-table thead th {
+      font-family: 'Panchang', sans-serif;
+      font-weight: 600;
+      font-size: clamp(8px, 0.75vw, 11px);
+      text-align: left;
+      padding: 0 8px 6px 8px;
+      opacity: 0.45;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .standings-table thead th:not(:first-child):not(:nth-child(2)) {
+      text-align: center;
+    }
+
+    .standings-table tbody tr {
+      border-top: 1px solid rgba(7, 30, 2, 0.12);
+    }
+
+    .standings-table tbody td {
+      padding: 7px 8px;
+      font-family: 'NewBlack', sans-serif;
+      font-size: clamp(11px, 1vw, 14px);
+      vertical-align: middle;
+    }
+
+    .standings-table tbody td:not(:first-child):not(:nth-child(2)) {
+      text-align: center;
+    }
+
+    .td-rank {
+      font-family: 'Panchang', sans-serif;
+      font-weight: 600;
+      opacity: 0.35;
+      width: 22px;
+      font-size: clamp(10px, 0.85vw, 12px);
+    }
+
+    .td-pts {
+      font-family: 'Panchang', sans-serif;
+      font-weight: 800;
+      font-size: clamp(13px, 1.2vw, 17px);
+    }
+
+    .standings-table tbody tr:first-child td {
+      font-family: 'Panchang', sans-serif;
+      font-weight: 700;
+    }
+
+    /* ═══════════════════════════════
+       Card 3 — Resultat
+    ═══════════════════════════════ */
+    .result-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      flex: 1;
+    }
+
+    .result-item {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      padding: 7px 0;
+      border-bottom: 1px solid rgba(7, 30, 2, 0.12);
+      gap: 8px;
+    }
+
+    .result-home { text-align: left; }
+    .result-away { text-align: right; }
+
+    .result-score {
+      font-family: 'Panchang', sans-serif;
+      font-weight: 800;
+      font-size: clamp(13px, 1.4vw, 19px);
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .result-date {
+      font-size: 10px;
+      opacity: 0.4;
+      letter-spacing: 0.05em;
+    }
+
+    /* ═══════════════════════════════
+       Card 4 — Spelschema
+    ═══════════════════════════════ */
+    .schedule-list {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+
+    .schedule-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(7, 30, 2, 0.12);
+    }
+
+    .schedule-time {
+      font-family: 'Panchang', sans-serif;
+      font-weight: 700;
+      font-size: clamp(12px, 1.2vw, 17px);
+      min-width: 72px;
+      flex-shrink: 0;
+    }
+
+    .schedule-teams {
+      flex: 1;
+      font-size: clamp(11px, 1vw, 14px);
+    }
+
+    .schedule-detail {
+      font-size: 11px;
+      opacity: 0.4;
+      white-space: nowrap;
+      text-align: right;
+    }
+
+    /* ═══════════════════════════════
+       Card 5 — Om turneringen
+    ═══════════════════════════════ */
+    .about-text {
+      line-height: 1.5;
+      font-size: clamp(13px, 1.35vw, 20px);
+      flex-shrink: 0;
+    }
+
+    .about-text p + p, .about-text p + ul, .about-text ul + p {
+      margin-top: 8px;
+    }
+
+    .about-text ul {
+      padding-left: 1.2em;
+      margin-top: 8px;
+    }
+
+    .about-text li + li {
+      margin-top: 4px;
+    }
+
+    .about-stats {
+      display: flex;
+      gap: 24px;
+      margin-top: auto;
+      padding-top: 16px;
+    }
+
+    .stat {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .stat-num {
+      font-family: 'Panchang', sans-serif;
+      font-weight: 800;
+      font-size: clamp(28px, 3.5vw, 52px);
+      line-height: 1;
+    }
+
+    .stat-label {
+      font-family: 'NewBlack', sans-serif;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      opacity: 0.5;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="cursor" id="cursor"></div>
+
+  <div class="grid">
+
+    <!-- ── Top row ── -->
+    <div class="row row-top">
+
+      <!-- Logo -->
+      <div class="logo-slot">
+        <svg id="b" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" width="1000" height="1000" viewBox="0 0 1000 1000">
+          <g id="c" data-name="ZG94JK">
+            <g>
+              <path d="M541.889,196.021c-9.049-31.692-14.363-63.534-16.038-96.408-6.777-3.925-13.003-8.434-18.636-13.879-2.732-2.547-6.359-3.559-9.875-2.515.534,40.886,6.28,80.588,17.52,120.039-76.581,23.207-145.626,66.071-200.741,124.673-28.811-21.811-59.4-40.051-92.374-54.529,1.924,10.644,2.281,20.74.699,31.075,25.829,12.427,50.082,27.141,73.07,44.521l-17.234,22.166c-20.055-15.125-41.365-28.235-64.269-39.579-4.255,8.526-9.595,16.049-16.361,23.157,23.151,11.171,44.389,24.018,64.779,39.525-20.081,31.412-36.158,64.775-48.189,100.43,8.627,6.766,15.634,14.818,21.638,24.365,11.216-37.879,27.241-73.192,47.948-106.27.057-.171.687-.422,1.02-.126,6.422,5.717,13.826,12.738,20.113,19.261-25.087,41.295-42.484,86.229-51.432,133.853l-32.543.012c-.103-22.573-12.277-43.229-31.689-54.36-17.568-10.517-23.677-32.853-14.081-50.866,11.926-22.387,9.093-49.447-6.647-69.212-12.425-15.602-10.5-38.731,4.62-51.856,19.061-16.546,27.179-42.483,19.481-66.859-6.02-19.063,3.57-40.463,22.761-47.305,24.331-8.675,41.018-30.492,42.714-56.417,1.326-20.274,19.047-35.588,39.165-35.031,25.471.704,48.296-13.941,58.987-36.834,8.317-17.81,29.769-26.646,48.057-19.031,23.961,9.978,50.897,5.286,69.683-12.803,14.181-13.655,37.469-13.88,51.791-.15,18.339,17.58,45.026,23.211,68.622,13.286,19.084-8.027,40.926.461,49.665,19.23,10.611,22.791,33.713,37.015,58.998,36.348,19.783-.522,37.377,14.664,38.724,34.579,1.755,25.961,18.075,47.974,42.59,56.7,19.239,6.847,29.079,28.216,22.965,47.471-7.767,24.462.618,50.452,19.6,66.966,16.051,13.964,16.299,37.4,3.488,53.423-15.752,19.702-16.697,46.702-5.226,68.587,9.296,17.737,2.496,39.69-14.498,49.735-11.361,6.715-20.233,16.147-25.773,28.184-3.598,7.817-5.644,15.915-5.876,24.62l-.036,1.368c-.007.273-.67.224-1.32.224l-301.188-.048c-19.263-67.25-53.499-128.819-100.542-180.897,46.282-49.065,104.848-84.745,169.524-102.897,25.768,51.147,60.326,96.36,102.577,134.527,38.741,34.921,82.94,62.882,131.051,82.831.973.157,1.478-.22,2.156-.831,4.696-4.236,9.703-7.782,15.109-11.029,3.113-1.87,4.862-4.854,5.059-8.681.03-.584-.881-1.043-1.72-1.365-45.203-17.386-86.967-42.349-123.919-73.809-42.017-35.881-76.714-79.301-102.314-128.397l29.377-4.661c24.425,44.286,56.738,83.18,95.484,115.344,27.604,22.836,57.976,41.856,90.526,56.556.482.218.939.366,1.208.453.241.078.088-1.008.06-1.262l-.072-.659-.072-.688c-.807-7.71-.628-15.307.595-22.97l.646-4.046c.01-.062.021-.367.03-.595-65.317-31.699-120.192-82.067-157.394-144.319l1.232-.219c.145-.026.591-.074.783-.078,41.91-.886,86.085,4.512,125.724,17.903l10.324,3.488.53.191,2.721.997.626.23c.145.053.544.194.581.079.056-.174.187-.796.191-1.154.09-8.795,1.677-18.093,4.435-26.784-52.059-18.519-106.879-25.876-162.089-22.076l-11.777-27.193c23.619-2.24,46.079-2.314,68.853-.892l.837.083.783.06c17.716,1.358,36.425,3.816,53.689,7.198.446.087.838-.101.76-.177-6.802-9.185-11.891-19.451-14.944-30.734-39.279-6.034-78.917-6.991-118.348-2.868-.484.051-.931.062-1.153.037s-.354-.61-.478-1.022c-5.936-19.633-10.504-39.437-12.807-59.842l-1.514-13.416-.17-1.592c-.033-.307-.763-.163-1.19-.117l-.739.079c-6.574.703-13.066.922-19.646.13l-4.752-.572-.651-.082-.776-.098c-.143-.018-.167.339-.272.778,2.229,27.025,7.152,53.52,14.798,79.738l-27.6,5.6Z"/>
+              <path d="M388.318,565.769l-106.298.014c8.034-39.461,22.188-76.767,42.515-111.991,27.526,33.292,49.011,70.668,63.783,111.977Z"/>
+              <path d="M533.605,256.208c-67.725,20.026-128.344,57.287-177.011,108.407l-20.708-18.958c51.367-54.154,115.798-94.141,187.505-115.711l10.214,26.262Z"/>
+              <path d="M417.946,565.841c-16.667-50.418-42.866-96.592-77.692-136.8l17.197-22.955c41.057,46.138,71.664,100.057,89.876,159.594l-29.381.161Z"/>
+              <polygon points="589.482 243.987 561.074 249.146 550.552 222.752 578.452 217.345 589.482 243.987"/>
+              <polygon points="320.8 407.996 300.088 388.721 317.293 366.617 337.98 385.617 320.8 407.996"/>
+            </g>
+          </g>
+          <g>
+            <path d="M166.156,723.859H19.143v-124.861h147.013c7.566,0,14.249.916,20.048,2.747,5.795,1.831,10.344,4.943,13.64,9.337,3.295,4.394,4.942,10.375,4.942,17.942,0,9.766-2.411,16.966-7.231,21.604-4.823,4.64-12.054,7.446-21.695,8.422v-2.747c10.862,1.465,19.161,4.732,24.9,9.795,5.735,5.066,8.604,13.212,8.604,24.441,0,8.178-1.711,14.709-5.126,19.589-3.418,4.883-8.362,8.394-14.829,10.527-6.471,2.137-14.221,3.204-23.252,3.204ZM151.876,635.98h-84.034v9.887h84.034c1.707,0,3.081-.184,4.12-.55,1.036-.366,1.799-.916,2.288-1.647.487-.733.733-1.709.733-2.93,0-1.707-.581-2.929-1.739-3.661-1.161-.733-2.961-1.099-5.401-1.099ZM155.721,680.103h-87.879v9.886h87.879c2.441,0,4.362-.242,5.767-.732,1.401-.486,2.105-1.891,2.105-4.212,0-2.197-.704-3.569-2.105-4.119-1.405-.55-3.327-.824-5.767-.824Z"/>
+            <path d="M321.591,726.606c-24.9,0-45.13-2.352-60.691-7.049-15.562-4.698-26.975-11.869-34.236-21.512-7.263-9.641-10.893-21.847-10.893-36.616,0-14.889,3.63-27.124,10.893-36.707,7.26-9.581,18.674-16.72,34.236-21.42,15.561-4.698,35.792-7.049,60.691-7.049s45.281,2.351,60.782,7.049c15.499,4.7,26.881,11.839,34.144,21.42,7.26,9.583,10.894,21.818,10.894,36.707,0,14.769-3.634,26.975-10.894,36.616-7.263,9.643-18.645,16.814-34.144,21.512-15.501,4.696-35.763,7.049-60.782,7.049ZM321.591,684.497c11.105,0,20.259-.367,27.461-1.099,7.2-.732,12.844-1.951,16.936-3.662,4.087-1.707,6.957-4.056,8.604-7.047,1.647-2.99,2.471-6.743,2.471-11.26,0-4.636-.824-8.45-2.471-11.443-1.647-2.989-4.517-5.338-8.604-7.049-4.092-1.707-9.735-2.897-16.936-3.57-7.203-.668-16.357-1.006-27.461-1.006-14.77,0-26.244.64-34.42,1.922-8.178,1.281-13.885,3.602-17.118,6.958-3.235,3.357-4.852,8.087-4.852,14.188s1.617,10.833,4.852,14.189c3.232,3.358,8.94,5.675,17.118,6.957,8.176,1.281,19.649,1.923,34.42,1.923Z"/>
+            <path d="M573.875,657.035v-58.037h49.431v68.839c0,14.036-3.876,25.328-11.625,33.869-7.752,8.545-18.615,14.739-32.589,18.583-13.977,3.844-30.363,5.767-49.157,5.767-18.675,0-35.031-1.923-49.065-5.767-14.037-3.844-24.93-10.038-32.68-18.583-7.752-8.541-11.626-19.833-11.626-33.869v-68.839h49.432v58.037c0,7.08,1.493,12.572,4.486,16.478,2.989,3.907,7.717,6.621,14.188,8.147,6.469,1.527,14.89,2.289,25.266,2.289,10.495,0,18.949-.761,25.356-2.289,6.407-1.525,11.105-4.24,14.097-8.147,2.989-3.906,4.486-9.397,4.486-16.478Z"/>
+            <path d="M685.552,681.751h113.693v42.108h-163.125v-124.861h49.432v82.753Z"/>
+            <path d="M980.857,723.859h-170.631v-124.861h170.631v38.447h-121.199v8.238h117.721v31.123h-117.721v8.605h121.199v38.446Z"/>
+          </g>
+          <g>
+            <path d="M57.479,845.796H19.65v-95.552h37.829v95.552ZM112.961,750.244h51.419l-72.996,54.221-4.903,1.82-42.593,29.283-2.662-29.002,26.9-24.658,44.834-31.664ZM102.593,785.69l65.15,60.105h-50.018l-45.114-42.032,29.983-18.074Z"/>
+            <path d="M267.078,750.244l-1.122,6.165-51.418,89.387h-45.395l58.704-95.552h39.23ZM305.045,829.964h-101.156v-25.92h101.156v25.92ZM291.176,845.796l-51.419-89.387-.561-6.165h39.23l58.704,95.552h-45.954Z"/>
+            <path d="M377.76,845.796h-37.829v-95.552h45.955l49.317,64.589,49.317-64.589h45.114v95.552h-37.829v-50.578l-37.829,50.578h-38.388l-37.829-50.718v50.718Z"/>
+            <path d="M540.841,845.796v-95.552h98.914c5.884,0,11.419.584,16.603,1.751,5.183,1.169,9.713,3.107,13.59,5.815,3.875,2.709,6.911,6.422,9.107,11.138,2.194,4.717,3.292,10.671,3.292,17.863,0,10.088-1.915,18.122-5.744,24.098-3.831,5.979-8.945,10.252-15.342,12.82-6.399,2.57-13.568,3.853-21.506,3.853h-61.086v18.214h-37.829ZM634.992,782.468h-56.322v12.89h56.322c2.429,0,4.39-.467,5.886-1.401,1.493-.933,2.241-2.614,2.241-5.044,0-2.708-.749-4.459-2.241-5.254-1.496-.793-3.457-1.191-5.886-1.191Z"/>
+            <path d="M820.63,845.796h-130.578v-95.552h130.578v29.422h-92.75v6.305h90.088v23.818h-90.088v6.585h92.75v29.422Z"/>
+            <path d="M868.266,845.796h-37.829v-95.552h43.013l69.072,54.36v-54.36h37.828v95.552h-42.032l-70.052-55.902v55.902Z"/>
+          </g>
+          <g>
+            <path d="M354.953,899.934c0-.801-.335-1.453-1.003-1.953-.668-.501-1.787-.852-3.357-1.052-1.57-.201-3.791-.301-6.664-.301-5.946,0-12.292.318-19.038.952-6.749.635-13.395,1.438-19.941,2.405-6.549.968-12.56,2.022-18.037,3.156l-4.71-22.546c5.678-1.336,11.725-2.521,18.138-3.557,6.413-1.034,12.909-1.87,19.49-2.505,6.579-.634,12.942-.952,19.089-.952,10.153,0,18.403.77,24.75,2.305,6.346,1.537,10.988,3.908,13.929,7.115,2.938,3.207,4.409,7.315,4.409,12.325,0,4.745-1.037,8.685-3.107,11.824-2.071,3.142-5.346,5.762-9.82,7.866-4.476,2.104-10.321,3.993-17.537,5.661l-38.479,8.918v-5.411c3.007-.333,6.53-.652,10.572-.952,4.042-.301,8.317-.584,12.826-.852,4.509-.266,8.984-.484,13.428-.651,4.442-.166,8.601-.251,12.476-.251h20.242v22.045h-96.599v-24.951l63.231-14.63c1.403-.333,2.521-.666,3.356-1.001.835-.334,1.437-.734,1.804-1.203.367-.466.552-1.067.552-1.804Z"/>
+            <path d="M502.856,909.354c0,6.079-1.101,11.358-3.307,15.832-2.204,4.477-5.628,8.184-10.271,11.124-4.645,2.941-10.64,5.127-17.988,6.563-7.349,1.437-16.133,2.155-26.354,2.155s-19.005-.718-26.354-2.155c-7.349-1.436-13.344-3.622-17.986-6.563-4.645-2.939-8.067-6.646-10.272-11.124-2.204-4.474-3.307-9.753-3.307-15.832s1.103-11.357,3.307-15.833c2.205-4.475,5.627-8.182,10.272-11.123,4.642-2.939,10.638-5.126,17.986-6.564,7.349-1.436,16.133-2.155,26.354-2.155s19.005.719,26.354,2.155c7.348,1.438,13.343,3.624,17.988,6.564,4.642,2.941,8.067,6.647,10.271,11.123,2.205,4.476,3.307,9.755,3.307,15.833ZM475.8,909.354c0-3.34-.886-5.928-2.655-7.766-1.771-1.836-4.878-3.107-9.32-3.808-4.443-.701-10.739-1.052-18.889-1.052-8.083,0-14.363.351-18.838,1.052-4.476.701-7.601,1.972-9.369,3.808-1.771,1.838-2.656,4.427-2.656,7.766s.885,5.93,2.656,7.765c1.769,1.839,4.893,3.107,9.369,3.808,4.475.701,10.755,1.052,18.838,1.052,8.15,0,14.446-.351,18.889-1.052,4.442-.701,7.549-1.969,9.32-3.808,1.769-1.836,2.655-4.425,2.655-7.765Z"/>
+            <path d="M579.213,899.934c0-.801-.335-1.453-1.003-1.953-.668-.501-1.787-.852-3.357-1.052-1.57-.201-3.791-.301-6.664-.301-5.946,0-12.292.318-19.038.952-6.749.635-13.395,1.438-19.941,2.405-6.549.968-12.56,2.022-18.037,3.156l-4.71-22.546c5.678-1.336,11.725-2.521,18.138-3.557,6.413-1.034,12.909-1.87,19.49-2.505,6.579-.634,12.942-.952,19.089-.952,10.153,0,18.403.77,24.75,2.305,6.346,1.537,10.988,3.908,13.929,7.115,2.938,3.207,4.409,7.315,4.409,12.325,0,4.745-1.037,8.685-3.107,11.824-2.071,3.142-5.346,5.762-9.82,7.866-4.476,2.104-10.321,3.993-17.537,5.661l-38.479,8.918v-5.411c3.007-.333,6.53-.652,10.572-.952,4.042-.301,8.317-.584,12.826-.852,4.509-.266,8.984-.484,13.428-.651,4.442-.166,8.601-.251,12.476-.251h20.242v22.045h-96.599v-24.951l63.231-14.63c1.403-.333,2.521-.666,3.356-1.001.835-.334,1.437-.734,1.804-1.203.367-.466.552-1.067.552-1.804Z"/>
+            <path d="M669.598,917.671c-7.483,0-14.73.4-21.745,1.203-7.015.801-13.695,1.803-20.041,3.005l-1.403-16.433c4.409-1.068,8.834-2.037,13.277-2.907,4.442-.867,9.201-1.569,14.28-2.104,5.075-.534,10.687-.801,16.834-.801,5.945,0,11.355.267,16.233.801,4.875.535,9.235,1.37,13.077,2.505,3.841,1.137,7.064,2.623,9.669,4.459,2.605,1.838,4.593,4.093,5.963,6.764,1.369,2.674,2.055,5.779,2.055,9.32,0,2.941-.535,5.579-1.604,7.916-1.068,2.339-2.79,4.376-5.16,6.113-2.372,1.738-5.479,3.156-9.32,4.259-3.842,1.101-8.517,1.937-14.029,2.505-5.511.566-11.974.851-19.389.851-10.622,0-19.575-.768-26.855-2.304-7.282-1.536-13.144-3.841-17.586-6.914-4.443-3.071-7.65-6.864-9.62-11.373-1.971-4.509-2.956-9.77-2.956-15.782,0-4.943.934-9.335,2.805-13.177,1.87-3.841,4.526-7.13,7.966-9.87,3.441-2.738,7.516-5.011,12.225-6.814,4.71-1.803,9.954-3.122,15.733-3.957,5.778-.834,11.907-1.253,18.388-1.253,6.012,0,11.757.235,17.236.701,5.477.468,10.621,1.087,15.432,1.855,4.809.768,9.119,1.62,12.926,2.555l-4.209,21.645c-3.341-.801-6.964-1.553-10.872-2.255-3.908-.701-8.335-1.285-13.277-1.753-4.945-.467-10.689-.701-17.236-.701-6.413,0-11.641.285-15.682.851-4.042.568-7.182,1.42-9.42,2.556-2.238,1.137-3.791,2.555-4.659,4.259-.87,1.704-1.303,3.693-1.303,5.963,0,2.672.433,4.909,1.303,6.713.867,1.804,2.421,3.207,4.659,4.209,2.238,1.001,5.394,1.72,9.47,2.155,4.074.435,9.319.651,15.732.651,4.943,0,8.901-.033,11.874-.1,2.971-.066,5.194-.2,6.664-.401,1.469-.2,2.438-.466,2.905-.801.467-.333.703-.767.703-1.303,0-.601-.251-1.103-.752-1.503-.501-.401-1.471-.685-2.907-.852-1.437-.166-3.541-.284-6.312-.351-2.774-.066-6.464-.1-11.073-.1Z"/>
+          </g>
+        </svg>
+      </div>
+
+      <!-- Tabell -->
+      <div class="card">
+        <div class="card-title">Tabell</div>
+        <div class="card-body">
+          <table class="standings-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Lag</th>
+                <th>S</th>
+                <th>V</th>
+                <th>P</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="td-rank">1</td>
+                <td>TBD</td>
+                <td>–</td><td>–</td>
+                <td class="td-pts">–</td>
+              </tr>
+              <tr>
+                <td class="td-rank">2</td>
+                <td>TBD</td>
+                <td>–</td><td>–</td>
+                <td class="td-pts">–</td>
+              </tr>
+              <tr>
+                <td class="td-rank">3</td>
+                <td>TBD</td>
+                <td>–</td><td>–</td>
+                <td class="td-pts">–</td>
+              </tr>
+              <tr>
+                <td class="td-rank">4</td>
+                <td>TBD</td>
+                <td>–</td><td>–</td>
+                <td class="td-pts">–</td>
+              </tr>
+              <tr>
+                <td class="td-rank">5</td>
+                <td>TBD</td>
+                <td>–</td><td>–</td>
+                <td class="td-pts">–</td>
+              </tr>
+              <tr>
+                <td class="td-rank">6</td>
+                <td>TBD</td>
+                <td>–</td><td>–</td>
+                <td class="td-pts">–</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Resultat -->
+      <div class="card">
+        <div class="card-title">Resultat</div>
+        <div class="card-body">
+          <div class="result-list">
+            <div class="result-item">
+              <span class="result-home">TBD</span>
+              <span class="result-score">– – –</span>
+              <span class="result-away">TBD</span>
+            </div>
+            <div class="result-item">
+              <span class="result-home">TBD</span>
+              <span class="result-score">– – –</span>
+              <span class="result-away">TBD</span>
+            </div>
+            <div class="result-item">
+              <span class="result-home">TBD</span>
+              <span class="result-score">– – –</span>
+              <span class="result-away">TBD</span>
+            </div>
+            <div class="result-item">
+              <span class="result-home">TBD</span>
+              <span class="result-score">– – –</span>
+              <span class="result-away">TBD</span>
+            </div>
+            <div class="result-item">
+              <span class="result-home">TBD</span>
+              <span class="result-score">– – –</span>
+              <span class="result-away">TBD</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /row-top -->
+
+    <!-- ── Bottom row ── -->
+    <div class="row row-bottom">
+
+      <!-- Om turneringen -->
+      <div class="card card-schedule">
+        <div class="card-title">Om turneringen</div>
+        <div class="card-body">
+          <div class="about-text">
+            <p>Damma av kloten för nu är det dags igen… Boulekampen gör retur för femte gången, denna gång redan i maj 2026.</p>
+            <p>Under dagen kommer det att bjudas på intensiva matcher, tid för mingel, en smakfull lunch och massor av bra musik. Och ja – ta med er egen dryck, för även om sport och alkohol inte alltid går hand i hand så är detta ett undantag.</p>
+            <p>När turneringen är avgjord firar vi storslaget på vår officiella "After Boule", där vi intar LOKAL för en lyxig middagsbuffé och en välkomstdrink.</p>
+            <ul>
+              <li>Samla ihop ett lag på 4 personer</li>
+              <li>Anmäl er senast 8 maj</li>
+              <li>Anmälningsavgift: 2 400 kr/lag</li>
+            </ul>
+            <p>I år ska man även komma utklädd, och för titeln bästa lagutklädnad utlovas ett storslaget pris.</p>
+            <p>Ni tävlar inte bara om ära, vandringspokalen och evig stolthet – utan också om att skapa en dag ni sent kommer att glömma. Nu är det upp till er – gör hösten oförglömlig och boka er plats på årets roligaste turnering.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Datum / hype -->
+      <div class="date-slot">
+        <a href="anmal.html" class="anmal-btn">ANMÄL DITT LAG HÄR</a>
+        <div class="date-lines">
+          <div class="date-line">23 MAJ 2026</div>
+          <div class="date-line">SUNDSVALL</div>
+          <div class="date-line">GÖR ER REDO</div>
+        </div>
+      </div>
+
+    </div><!-- /row-bottom -->
+
+  </div><!-- /grid -->
+
+  <script>
+    const cursor = document.getElementById('cursor');
+    document.addEventListener('mousemove', e => {
+      cursor.style.left = e.clientX + 'px';
+      cursor.style.top  = e.clientY + 'px';
+    });
+  </script>
+
+</body>
+</html>

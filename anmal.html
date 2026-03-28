@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Anmäl ditt lag — Boulekampen</title>
+  <style>
+    @font-face {
+      font-family: 'Panchang';
+      src: url('assets/fonts/Panchang-Variable.ttf') format('truetype');
+      font-weight: 100 900;
+    }
+    @font-face {
+      font-family: 'NewBlack';
+      src: url('assets/fonts/NewBlackTypeface-Regular.ttf') format('truetype');
+      font-weight: normal;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      cursor: none;
+    }
+
+    html, body {
+      background: #093000;
+      color: #f9ff00;
+      min-height: 100vh;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 48px 24px 80px;
+    }
+
+    /* ── Custom cursor ── */
+    .cursor {
+      position: fixed;
+      width: 14px;
+      height: 14px;
+      background: #ea2910;
+      border-radius: 50%;
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+      z-index: 9999;
+    }
+
+    /* ── Header ── */
+    .back-link {
+      align-self: flex-start;
+      font-family: 'Panchang', sans-serif;
+      font-weight: 700;
+      font-size: 13px;
+      color: #f9ff00;
+      text-decoration: none;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      opacity: 0.5;
+      margin-bottom: 40px;
+      transition: opacity 0.15s;
+    }
+    .back-link:hover { opacity: 1; }
+
+    h1 {
+      font-family: 'Panchang', sans-serif;
+      font-weight: 800;
+      font-size: clamp(36px, 7vw, 96px);
+      text-transform: uppercase;
+      line-height: 1;
+      letter-spacing: -0.02em;
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      font-family: 'NewBlack', sans-serif;
+      font-size: clamp(14px, 1.5vw, 20px);
+      opacity: 0.5;
+      margin-bottom: 52px;
+      text-align: center;
+    }
+
+    /* ── Form card ── */
+    .form-card {
+      background: #f9ff00;
+      color: #093000;
+      border-radius: 20px;
+      padding: 48px 48px 52px;
+      width: 100%;
+      max-width: 680px;
+    }
+
+    .form-card h2 {
+      font-family: 'Panchang', sans-serif;
+      font-weight: 800;
+      font-size: clamp(18px, 2.5vw, 32px);
+      text-transform: uppercase;
+      letter-spacing: -0.01em;
+      margin-bottom: 8px;
+    }
+
+    .form-card .form-desc {
+      font-family: 'NewBlack', sans-serif;
+      font-size: clamp(13px, 1.2vw, 17px);
+      opacity: 0.6;
+      line-height: 1.5;
+      margin-bottom: 40px;
+    }
+
+    /* ── Fields ── */
+    .field {
+      margin-bottom: 28px;
+    }
+
+    .field label {
+      display: block;
+      font-family: 'Panchang', sans-serif;
+      font-weight: 700;
+      font-size: clamp(12px, 1.1vw, 16px);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 10px;
+    }
+
+    .field input[type="text"],
+    .field input[type="email"],
+    .field input[type="tel"] {
+      width: 100%;
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid #093000;
+      padding: 8px 0 10px;
+      font-family: 'NewBlack', sans-serif;
+      font-size: clamp(16px, 1.6vw, 22px);
+      color: #093000;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .field input::placeholder {
+      opacity: 0.3;
+    }
+
+    .field input:focus {
+      border-bottom-color: #ea2910;
+    }
+
+    /* ── Radio ── */
+    .radio-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .radio-option {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: none;
+    }
+
+    .radio-option input[type="radio"] {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 22px;
+      height: 22px;
+      border: 2px solid #093000;
+      border-radius: 50%;
+      flex-shrink: 0;
+      position: relative;
+      transition: border-color 0.15s;
+      cursor: none;
+    }
+
+    .radio-option input[type="radio"]:checked {
+      border-color: #ea2910;
+      background: #ea2910;
+    }
+
+    .radio-option input[type="radio"]:checked::after {
+      content: '';
+      position: absolute;
+      inset: 3px;
+      background: #f9ff00;
+      border-radius: 50%;
+    }
+
+    .radio-option span {
+      font-family: 'NewBlack', sans-serif;
+      font-size: clamp(15px, 1.4vw, 20px);
+    }
+
+    /* ── Divider ── */
+    .divider {
+      border: none;
+      border-top: 2px solid rgba(9, 48, 0, 0.15);
+      margin: 32px 0;
+    }
+
+    /* ── Submit ── */
+    .submit-btn {
+      display: block;
+      width: 100%;
+      margin-top: 36px;
+      padding: 0.5em 1em;
+      background: #093000;
+      color: #f9ff00;
+      font-family: 'Panchang', sans-serif;
+      font-weight: 800;
+      font-size: clamp(18px, 2.5vw, 36px);
+      text-transform: uppercase;
+      letter-spacing: -0.01em;
+      border: none;
+      border-radius: 999px;
+      text-align: center;
+      transition: background 0.15s, color 0.15s;
+      cursor: none;
+    }
+
+    .submit-btn:hover {
+      background: #ea2910;
+      color: #f9ff00;
+    }
+
+    /* ── Thank you state ── */
+    .thankyou {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 20px 0 8px;
+    }
+
+    .thankyou-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+
+    .thankyou h3 {
+      font-family: 'Panchang', sans-serif;
+      font-weight: 800;
+      font-size: clamp(22px, 3vw, 42px);
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .thankyou p {
+      font-family: 'NewBlack', sans-serif;
+      font-size: clamp(14px, 1.3vw, 18px);
+      opacity: 0.6;
+      line-height: 1.6;
+      max-width: 400px;
+    }
+  </style>
+</head>
+<body>
+
+  <iframe name="hidden-iframe" style="display:none;"></iframe>
+  <div class="cursor" id="cursor"></div>
+
+  <a href="index.html" class="back-link">← Tillbaka</a>
+
+  <h1>Anmäl ditt lag</h1>
+  <p class="subtitle">Boulekampen &middot; 23 maj 2026 &middot; Sundsvall</p>
+
+  <div class="form-card">
+
+    <div id="form-content">
+      <h2>Anmälningsformulär</h2>
+      <p class="form-desc">Anmäl ditt lag till årets mest prestigefyllda bouleturnering. Fyll i lagkaptenens uppgifter och bekräfta betalningen.</p>
+
+      <form id="anmal-form">
+
+        <div class="field">
+          <label for="namn">Lagkaptenens fullständiga namn</label>
+          <input type="text" id="namn" name="entry.1296487750" placeholder="För- och efternamn" required>
+        </div>
+
+        <div class="field">
+          <label for="telefon">Telefonnummer till lagkaptenen</label>
+          <input type="tel" id="telefon" name="entry.741344311" placeholder="07X XXX XX XX" required>
+        </div>
+
+        <div class="field">
+          <label for="epost">Lagkaptenens e-postadress</label>
+          <input type="email" id="epost" name="entry.1515766358" placeholder="namn@exempel.se" required>
+        </div>
+
+        <div class="field">
+          <label for="lagnamn">Lagnamn</label>
+          <input type="text" id="lagnamn" name="entry.948117653" placeholder="Vad heter ert lag?" required>
+        </div>
+
+        <hr class="divider">
+
+        <div class="field">
+          <label>Har du swishat lagavgiften (2000 kr) till Swish-nummer: 0704710343?</label>
+          <div class="radio-group">
+            <label class="radio-option">
+              <input type="radio" name="entry.1487505586" value="Jajemän!" required>
+              <span>Jajemän!</span>
+            </label>
+            <label class="radio-option">
+              <input type="radio" name="entry.1487505586" value="Nej, men jag ska!">
+              <span>Nej, men jag ska!</span>
+            </label>
+          </div>
+        </div>
+
+        <button type="submit" class="submit-btn">Skicka anmälan</button>
+
+      </form>
+    </div>
+
+    <div class="thankyou" id="thankyou">
+      <div class="thankyou-icon">🎯</div>
+      <h3>Anmälan mottagen!</h3>
+      <p>Välkomna till Boulekampen 2026. Vi ses i Sundsvall den 23 maj!</p>
+    </div>
+
+  </div>
+
+  <script>
+    // Custom cursor
+    const cursor = document.getElementById('cursor');
+    document.addEventListener('mousemove', e => {
+      cursor.style.left = e.clientX + 'px';
+      cursor.style.top  = e.clientY + 'px';
+    });
+
+    document.getElementById('anmal-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      // URLSearchParams encodes as application/x-www-form-urlencoded,
+      // a CORS-safelisted content-type that works with no-cors fetch
+      const body = new URLSearchParams(new FormData(this));
+      try {
+        await fetch(
+          'https://docs.google.com/forms/d/e/1FAIpQLSfJrLLgrqOMfd79JGpsna7QY8V1l_9mcshnvYdGvfgYhG08CQ/formResponse',
+          { method: 'POST', mode: 'no-cors', body }
+        );
+      } catch (_) {}
+      document.getElementById('form-content').style.display = 'none';
+      document.getElementById('thankyou').style.display = 'flex';
+    });
+  </script>
+
+</body>
+</html>
