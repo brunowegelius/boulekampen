@@ -23,6 +23,11 @@
       cursor: none;
     }
 
+    @media (hover: none) and (pointer: coarse) {
+      *, *::before, *::after { cursor: auto; }
+      .cursor { display: none !important; }
+    }
+
     html, body {
       background: #093000;
       color: #f9ff00;
@@ -270,7 +275,7 @@
   <div class="form-card">
 
     <div id="form-content">
-      <h2>Anmälningsformulär</h2>
+      <h2>Anmälan</h2>
       <p class="form-desc">Anmäl ditt lag till årets mest prestigefyllda bouleturnering. Fyll i lagkaptenens uppgifter och bekräfta betalningen.</p>
 
       <form id="anmal-form" action="https://docs.google.com/forms/d/e/1FAIpQLSfJrLLgrqOMfd79JGpsna7QY8V1l_9mcshnvYdGvfgYhG08CQ/formResponse" method="POST" target="hidden-iframe" enctype="application/x-www-form-urlencoded">
@@ -298,7 +303,7 @@
         <hr class="divider">
 
         <div class="field">
-          <label>Har du swishat lagavgiften (2000 kr) till Swish-nummer: 0704710343?</label>
+          <label>Har du swishat lagavgiften (2 400 kr) till Swish-nummer: XXXXXXXX?</label>
           <div class="radio-group">
             <label class="radio-option">
               <input type="radio" name="entry.1487505586" value="Jajemän!" required>
