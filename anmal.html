@@ -28,6 +28,16 @@
       .cursor { display: none !important; }
     }
 
+    @keyframes fade-up {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .anim {
+      opacity: 0;
+      animation: fade-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
     html, body {
       background: #093000;
       color: #f9ff00;
@@ -267,12 +277,12 @@
   <iframe name="hidden-iframe" id="hidden-iframe" style="display:none;"></iframe>
   <div class="cursor" id="cursor"></div>
 
-  <a href="index.html" class="back-link">← Tillbaka</a>
+  <a href="index.html" class="back-link anim" style="animation-delay:.05s">← Tillbaka</a>
 
-  <h1>Anmäl ditt lag</h1>
-  <p class="subtitle">Boulekampen &middot; 23 maj 2026 &middot; Sundsvall</p>
+  <h1 class="anim" style="animation-delay:.1s">Anmäl ditt lag</h1>
+  <p class="subtitle anim" style="animation-delay:.2s">Boulekampen &middot; 23 maj 2026 &middot; Sundsvall</p>
 
-  <div class="form-card">
+  <div class="form-card anim" style="animation-delay:.3s">
 
     <div id="form-content">
       <h2>Anmälan</h2>
