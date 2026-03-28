@@ -259,7 +259,7 @@
 </head>
 <body>
 
-  <iframe name="hidden-iframe" style="display:none;"></iframe>
+  <iframe name="hidden-iframe" id="hidden-iframe" style="display:none;"></iframe>
   <div class="cursor" id="cursor"></div>
 
   <a href="index.html" class="back-link">← Tillbaka</a>
@@ -273,7 +273,7 @@
       <h2>Anmälningsformulär</h2>
       <p class="form-desc">Anmäl ditt lag till årets mest prestigefyllda bouleturnering. Fyll i lagkaptenens uppgifter och bekräfta betalningen.</p>
 
-      <form id="anmal-form">
+      <form id="anmal-form" action="https://docs.google.com/forms/d/e/1FAIpQLSfJrLLgrqOMfd79JGpsna7QY8V1l_9mcshnvYdGvfgYhG08CQ/formResponse" method="POST" target="hidden-iframe" enctype="application/x-www-form-urlencoded">
 
         <div class="field">
           <label for="namn">Lagkaptenens fullständiga namn</label>
@@ -332,19 +332,20 @@
       cursor.style.top  = e.clientY + 'px';
     });
 
-    document.getElementById('anmal-form').addEventListener('submit', async function(e) {
-      e.preventDefault();
-      // URLSearchParams encodes as application/x-www-form-urlencoded,
-      // a CORS-safelisted content-type that works with no-cors fetch
-      const body = new URLSearchParams(new FormData(this));
-      try {
-        await fetch(
-          'https://docs.google.com/forms/d/e/1FAIpQLSfJrLLgrqOMfd79JGpsna7QY8V1l_9mcshnvYdGvfgYhG08CQ/formResponse',
-          { method: 'POST', mode: 'no-cors', body }
-        );
-      } catch (_) {}
-      document.getElementById('form-content').style.display = 'none';
-      document.getElementById('thankyou').style.display = 'flex';
+    document.getElementById('hidden-iframe').addEventListener('load', function() {
+      // iframe loaded = Google received the submission
+      const fc = document.getElementById('form-content');
+      if (fc.style.display === 'none') return; // already showing thankyou
+      // only trigger after a real submit (iframe src changes from blank)
+    });
+
+    document.getElementById('anmal-form').addEventListener('submit', function() {
+      // Let the form POST naturally to the hidden iframe,
+      // then swap to thank-you after a short delay
+      setTimeout(function() {
+        document.getElementById('form-content').style.display = 'none';
+        document.getElementById('thankyou').style.display = 'flex';
+      }, 800);
     });
   </script>
 

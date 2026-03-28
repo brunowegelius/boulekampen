@@ -402,6 +402,116 @@
       letter-spacing: 0.1em;
       opacity: 0.5;
     }
+
+    /* ═══════════════════════════════
+       Mobile
+    ═══════════════════════════════ */
+    @media (max-width: 768px) {
+      *, *::before, *::after { cursor: auto; }
+      .cursor { display: none; }
+
+      html, body {
+        height: auto;
+        overflow: auto;
+      }
+
+      body {
+        padding: 16px;
+        height: auto;
+        width: 100%;
+        gap: 10px;
+      }
+
+      .grid {
+        gap: 10px;
+        flex: none;
+      }
+
+      .row {
+        flex-direction: column;
+        flex: none;
+        gap: 10px;
+      }
+
+      /* Cards: auto height, not flex-grow */
+      .card {
+        flex: none;
+        min-height: 0;
+        overflow: visible;
+        padding: 18px 20px 16px;
+      }
+
+      .card-body {
+        font-size: 15px;
+        overflow: visible;
+        min-height: 0;
+      }
+
+      .card-title {
+        font-size: 18px;
+      }
+
+      /* Logo */
+      .logo-slot {
+        flex: none;
+        height: 220px;
+      }
+
+      /* Top row: logo goes full-width, then tabell+resultat side by side */
+      .row-top {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: auto auto;
+      }
+
+      .row-top .logo-slot {
+        grid-column: 1 / -1;
+      }
+
+      /* Bottom row stacks */
+      .row-bottom {
+        flex-direction: column;
+      }
+
+      .card-schedule { flex: none; }
+
+      /* Date slot: stacks naturally */
+      .date-slot {
+        flex: none;
+        gap: 10px;
+      }
+
+      .anmal-btn {
+        flex: none;
+        min-height: 100px;
+        font-size: 28px;
+        border-radius: 14px;
+      }
+
+      .date-line {
+        font-size: 11vw;
+      }
+
+      /* Match card */
+      .match-teams { flex: none; margin-bottom: 12px; }
+      .match-team { font-size: 20px; }
+
+      /* Standings table */
+      .standings-table td,
+      .standings-table th { font-size: 13px; padding: 5px 6px; }
+
+      /* Results */
+      .result-score { font-size: 16px; }
+      .result-home, .result-away { font-size: 12px; }
+
+      /* Schedule */
+      .schedule-time { font-size: 15px; width: 38px; }
+      .schedule-teams { font-size: 13px; }
+      .schedule-detail { font-size: 10px; }
+
+      /* About */
+      .about-text { font-size: 15px; }
+    }
   </style>
 </head>
 <body>
