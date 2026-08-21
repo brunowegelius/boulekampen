@@ -5,6 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <!-- Tonar iOS Safaris statusfält/verktygsfält i sidans färg -->
   <meta name="theme-color" content="#093000">
+  <!-- Relativa sökvägar: sidan ligger både på boulekampen.se och under en
+       subpath i kundportalen. SVG:n väljs av moderna webbläsare, .ico är
+       fallback och täcker klienter som blint hämtar /favicon.ico. -->
+  <link rel="icon" href="favicon.ico" sizes="any">
+  <link rel="icon" href="assets/favicon/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="assets/favicon/apple-touch-icon.png">
   <title>Boulekampen</title>
   <style>
     @font-face {
