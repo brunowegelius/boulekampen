@@ -42,6 +42,8 @@
     }
     .cursor.is-live { opacity: 1; }
     .cursor.is-hot  { transform: translate(-50%, -50%) scale(1); }
+    /* Göms medan man skriver. Ligger sist så den vinner över .is-live. */
+    .cursor.is-idle { opacity: 0; }
 
     /* ── Load animation ── */
     @keyframes fade-up {
@@ -922,12 +924,18 @@
       cursor.style.left = e.clientX + 'px';
       cursor.style.top  = e.clientY + 'px';
       cursor.classList.add('is-live'); // döljs tills musen faktiskt rörts
+      cursor.classList.remove('is-idle');
     });
 
     // Lillen växer när den är över något klickbart
     const hotSel = 'a, button, input, label, select, textarea, [role="button"]';
     document.addEventListener('pointerover', e => {
       cursor.classList.toggle('is-hot', !!(e.target.closest && e.target.closest(hotSel)));
+    }, { passive: true });
+
+    // Skriver man göms markören — den skymmer annars texten
+    document.addEventListener('keydown', function () {
+      cursor.classList.add('is-idle');
     }, { passive: true });
 
 

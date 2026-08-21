@@ -107,6 +107,17 @@
     .cursor.is-live { opacity: 1; }
     .cursor.is-hot  { transform: translate(-50%, -50%) scale(1); }
 
+    /* Över textfält blir markören ett smalt streck. Som uppblåst disk lade
+       den sig över texten man just skrivit. */
+    .cursor.is-text {
+      width: 3px;
+      height: 24px;
+      border-radius: 2px;
+      transform: translate(-50%, -50%) scale(1);
+    }
+    /* Göms medan man skriver. Ligger sist så den vinner över .is-live. */
+    .cursor.is-idle { opacity: 0; }
+
     /* ── Tillbaka ── */
     .back-link {
       align-self: flex-start;
@@ -504,12 +515,22 @@
       cursor.style.left = e.clientX + 'px';
       cursor.style.top  = e.clientY + 'px';
       cursor.classList.add('is-live'); // döljs tills musen faktiskt rörts
+      cursor.classList.remove('is-idle');
     });
 
     // Lillen växer när den är över något klickbart
-    var hotSel = 'a, button, input, label, select, textarea, [role="button"]';
+    var hotSel  = 'a, button, input, label, select, textarea, [role="button"]';
+    var textSel = 'input[type="text"], input[type="email"], input[type="tel"], textarea';
     document.addEventListener('pointerover', function (e) {
-      cursor.classList.toggle('is-hot', !!(e.target.closest && e.target.closest(hotSel)));
+      var el = e.target;
+      var isText = !!(el.closest && el.closest(textSel));
+      cursor.classList.toggle('is-text', isText);
+      cursor.classList.toggle('is-hot', !isText && !!(el.closest && el.closest(hotSel)));
+    }, { passive: true });
+
+    // Skriver man göms markören — den skymmer annars texten
+    document.addEventListener('keydown', function () {
+      cursor.classList.add('is-idle');
     }, { passive: true });
 
     // ── Formuläret skalas ner tills det ryms i vyn utan scroll ──
