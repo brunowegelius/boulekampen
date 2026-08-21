@@ -227,11 +227,34 @@
       flex-direction: column;
       gap: 12px;
       min-width: 0;
-      overflow: hidden;
+    }
+
+    /* ── Alex kikar upp bakom anmäl-knappen vid hover ── */
+    .cta-slot {
+      position: relative;
+      display: flex;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .cta-pop {
+      display: none;
+      position: absolute;
+      left: 50%;
+      bottom: 100%;          /* underkanten i höjd med knappens överkant */
+      z-index: 1;            /* under knappen, över korten ovanför */
+      height: clamp(130px, 20vh, 230px);
+      width: auto;
+      pointer-events: none;
+      transform: translate(-50%, 100%);   /* nedskjuten, gömd bakom knappen */
+      transition: transform 0.42s cubic-bezier(0.34, 1.45, 0.5, 1);
+      will-change: transform;
     }
 
     .anmal-btn {
       flex: 1;
+      position: relative;
+      z-index: 2;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -252,9 +275,19 @@
       min-height: 0;
     }
 
+    @media (hover: hover) and (pointer: fine) and (min-width: 769px) {
+      .cta-pop { display: block; }
+      /* Hovern sitter på omslaget — CSS kan inte välja ett tidigare syskon */
+      .cta-slot:hover .cta-pop { transform: translate(-50%, 22%); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .cta-pop { display: none; }
+    }
+
     @media (hover: hover) and (pointer: fine) {
-      /* Ingen lyftning: .date-slot har overflow:hidden och kapade knappens
-         överkant, vilket såg ut som att lådan försvann in i mellanrummet. */
+      /* Ingen lyftning: knappen kapades tidigare av .date-slot och det såg
+         ut som att lådan försvann in i mellanrummet. */
       .anmal-btn:hover { background: #f9ff00; color: #093000; }
       .anmal-btn.is-closed { background: #093000; color: #f9ff00; opacity: .55; }
     }
@@ -659,7 +692,8 @@
          en affisch: vad, när, anmäl — och först därefter detaljerna. */
       .row-top,
       .row-bottom,
-      .date-slot { display: contents; }
+      .date-slot,
+      .cta-slot { display: contents; }
 
       .logo-slot     { order: 1; }
       .date-lines    { order: 2; }
@@ -907,7 +941,10 @@
 
       <!-- Datum / hype -->
       <div class="date-slot">
-        <a href="anmal.html" class="anmal-btn anim" style="animation-delay:.4s"><span>ANMÄL DITT LAG HÄR</span></a>
+        <div class="cta-slot">
+          <img class="cta-pop" src="assets/images/alex.png" alt="" aria-hidden="true" width="249" height="480">
+          <a href="anmal.html" class="anmal-btn anim" style="animation-delay:.4s"><span>ANMÄL DITT LAG HÄR</span></a>
+        </div>
         <div class="date-lines">
           <div class="date-line anim" style="animation-delay:.5s">28 NOV 2026</div>
           <div class="date-line anim" style="animation-delay:.6s">SUNDSVALL</div>
