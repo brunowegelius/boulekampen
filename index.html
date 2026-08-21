@@ -247,9 +247,14 @@
       width: auto;
       pointer-events: none;
       transform: translate(-50%, 100%);   /* nedskjuten, gömd bakom knappen */
-      transition: transform 0.42s cubic-bezier(0.34, 1.45, 0.5, 1);
+      /* Knappen är det enda som döljer honom, så han får inte synas medan
+         den fortfarande tonar in — eller när den tonas ned som stängd. */
+      opacity: 0;
+      transition: transform 0.42s cubic-bezier(0.34, 1.45, 0.5, 1),
+                  opacity 0.2s linear;
       will-change: transform;
     }
+    .cta-slot.is-ready .cta-pop { opacity: 1; }
 
     .anmal-btn {
       flex: 1;
@@ -977,6 +982,18 @@
     }, { passive: true });
 
 
+    // Alex ligger bakom anmäl-knappen. Under inledningsanimationen är
+    // knappen genomskinlig, så han skulle lysa igenom — visa honom först
+    // när knappen tonat in klart.
+    (function () {
+      var slot = document.querySelector('.cta-slot');
+      var btn  = document.querySelector('.anmal-btn');
+      if (!slot || !btn) return;
+      var ready = function () { slot.classList.add('is-ready'); };
+      btn.addEventListener('animationend', ready, { once: true });
+      setTimeout(ready, 2500);   // skyddsnät om animationen aldrig kör
+    })();
+
     // ── Platstak ────────────────────────────────────────────────────────
     // Taket hålls av Apps Script på formuläret. Här läses bara läget för
     // att slippa skicka folk till en anmälan som är stängd.
@@ -1000,6 +1017,8 @@
         done = true; cleanup();
         if (!data || data.open) return;
         cta.classList.add('is-closed');
+        var slot = cta.closest('.cta-slot');
+        if (slot) slot.classList.remove('is-ready');
         cta.querySelector('span').firstChild.nodeValue = 'FULLBOKAT';
         cta.setAttribute('aria-disabled', 'true');
       };
