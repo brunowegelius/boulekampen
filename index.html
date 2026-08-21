@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Tonar iOS Safaris statusfält/verktygsfält i sidans färg -->
+  <meta name="theme-color" content="#093000">
   <title>Boulekampen</title>
   <style>
     @font-face {
@@ -23,17 +25,23 @@
       cursor: none;
     }
 
+    /* Ritas i full storlek och skalas NER i viloläge — uppskalning av en
+       liten cirkel ger kantiga pixlar när den växer. */
     .cursor {
       position: fixed;
-      width: 14px;
-      height: 14px;
+      width: 36px;
+      height: 36px;
       background: #ea2910;
       border-radius: 50%;
       pointer-events: none;
-      transform: translate(-50%, -50%);
+      transform: translate(-50%, -50%) scale(0.389);
       z-index: 9999;
-      transition: transform 0.08s ease;
+      transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+                  opacity 0.25s linear;
+      opacity: 0;
     }
+    .cursor.is-live { opacity: 1; }
+    .cursor.is-hot  { transform: translate(-50%, -50%) scale(1); }
 
     /* ── Load animation ── */
     @keyframes fade-up {
@@ -41,9 +49,26 @@
       to   { opacity: 1; transform: translateY(0); }
     }
 
-    .anim {
-      opacity: 0;
+    .anim { opacity: 0; }
+    .anim.in {
       animation: fade-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    /* Tangentbordsfokus */
+    :focus-visible {
+      outline: 3px solid #f9ff00;
+      outline-offset: 4px;
+      border-radius: 4px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        animation-delay: 0s !important;
+        transition-duration: 0.001ms !important;
+        transition-delay: 0s !important;
+      }
+      .anim { opacity: 1; }
     }
 
     html, body {
@@ -65,16 +90,50 @@
     .logo-slot {
       flex: 1;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
+      gap: 12px;
+      padding-bottom: clamp(14px, 3vh, 34px);
       min-width: 0;
       overflow: hidden;
     }
 
-    .logo-slot svg {
+    .logo-slot > svg {
       width: 100%;
-      height: 100%;
+      flex: 1 1 0;
+      min-height: 0;
       fill: #f9ff00;
+    }
+
+    /* ── Ort under loggan ── */
+    .place {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.55em;
+      line-height: 1;
+      flex-shrink: 0;
+      font-family: 'Panchang', sans-serif;
+      font-weight: 700;
+      font-size: clamp(10px, 0.9vw, 14px);
+      text-transform: uppercase;
+      letter-spacing: 0.28em;
+      color: #f9ff00;
+    }
+    .place span { margin-right: -0.28em; }
+
+    .pin {
+      width: 1.25em;
+      height: 1.25em;
+      flex-shrink: 0;
+      /* Versaler saknar underlängder — nudge upp pin:en till samma optiska mitt */
+      transform: translateY(-0.055em);
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
     }
 
     /* ── Card grid ── */
@@ -127,8 +186,35 @@
       flex-direction: column;
     }
 
-    /* ── Top row: 3 equal cards ── */
-    .row-top .card { flex: 1; }
+    /* ── Top row: 3 equal columns ── */
+    .row-top > .card,
+    .row-top > .stack { flex: 1; }
+
+    /* Tredje kolumnen är två kort ovanpå varandra */
+    .stack {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-width: 0;
+      min-height: 0;
+    }
+
+    .stack .card {
+      flex: 1;
+      padding: 15px 18px 13px;
+    }
+
+    .stack .card-title {
+      font-size: clamp(11px, 1.15vw, 17px);
+      padding-bottom: 6px;
+      margin-bottom: 8px;
+    }
+
+    .stack .card-body    { font-size: clamp(10px, 0.92vw, 14px); }
+    .stack .result-list  { justify-content: space-between; }
+    .stack .result-item  { padding: 2px 0; }
+    .stack .result-score { font-size: clamp(11px, 0.92vw, 14px); }
+
 
     /* ── Bottom row: 55 / 45 ── */
     .card-schedule { flex: 55; }
@@ -147,8 +233,10 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      background: #f9ff00;
-      color: #093000;
+      background: #ea2910;
+      color: #f9ff00;
+      transition: background 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+                  color 0.3s cubic-bezier(0.22, 1, 0.36, 1);
       font-family: 'Panchang', sans-serif;
       font-weight: 800;
       font-size: clamp(16px, 2.8vw, 48px);
@@ -162,17 +250,47 @@
       min-height: 0;
     }
 
+    @media (hover: hover) and (pointer: fine) {
+      /* Ingen lyftning: .date-slot har overflow:hidden och kapade knappens
+         överkant, vilket såg ut som att lådan försvann in i mellanrummet. */
+      .anmal-btn:hover { background: #f9ff00; color: #093000; }
+    }
+
+    /* ═══════════════════════════════
+       Sidövergång till anmälan
+    ═══════════════════════════════ */
+    .anmal-btn > span {
+      display: block;
+      transition: opacity 0.22s ease, transform 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .anmal-btn.is-launching > span {
+      opacity: 0;
+      transform: translateY(-16px);
+    }
+
+    /* Cirkeln växer ur knappens mitt och tar över skärmen.
+       Bara transform animeras — inget layoutarbete per bildruta. */
+    .page-blob {
+      position: fixed;
+      border-radius: 50%;
+      background: #f9ff00;
+      pointer-events: none;
+      z-index: 9998;
+      transform: scale(0.02);
+      will-change: transform;
+    }
+
     .date-lines {
       display: flex;
       flex-direction: column;
       flex-shrink: 0;
-      padding: 0 8px;
+      padding: 0 8px 6px;
     }
 
     .date-line {
       font-family: 'Panchang', sans-serif;
       font-weight: 800;
-      font-size: clamp(24px, 4.5vw, 72px);
+      font-size: clamp(24px, 3.35vw, 68px);
       color: #f9ff00;
       text-transform: uppercase;
       line-height: 1.05;
@@ -231,6 +349,42 @@
       font-family: 'Panchang', sans-serif;
       font-weight: 700;
       font-size: clamp(13px, 1.4vw, 20px);
+    }
+
+    /* ═══════════════════════════════
+       Kort — Praktiskt (sammanfattning)
+    ═══════════════════════════════ */
+    .facts {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      justify-content: space-between;
+    }
+
+    .fact {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 4px 0;
+      border-bottom: 1px solid rgba(7, 30, 2, 0.12);
+    }
+    .fact:last-child { border-bottom: none; }
+
+    .fact dt {
+      font-size: clamp(8px, 0.68vw, 11px);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      opacity: 0.5;
+      white-space: nowrap;
+    }
+
+    .fact dd {
+      font-family: 'Panchang', sans-serif;
+      font-weight: 700;
+      font-size: clamp(11px, 0.98vw, 15px);
+      text-align: right;
+      line-height: 1.2;
     }
 
     /* ═══════════════════════════════
@@ -367,14 +521,23 @@
     /* ═══════════════════════════════
        Card 5 — Om turneringen
     ═══════════════════════════════ */
+    /* Om-texten är lång och kortet har fast höjd. Storleken är satt så att
+       hela texten ryms; på riktigt låga fönster scrollar kortet hellre än
+       att kapa de sista styckena tyst. */
     .about-text {
-      line-height: 1.5;
-      font-size: clamp(13px, 1.35vw, 20px);
+      line-height: 1.45;
+      font-size: clamp(12px, 1.15vw, 18px);
       flex-shrink: 0;
     }
 
+    .card-schedule .card-body {
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(7, 30, 2, 0.25) transparent;
+    }
+
     .about-text p + p, .about-text p + ul, .about-text ul + p {
-      margin-top: 8px;
+      margin-top: 7px;
     }
 
     .about-text ul {
@@ -414,6 +577,22 @@
       opacity: 0.5;
     }
 
+    /* Låga desktopfönster — dra ihop luften innan något behöver scrollas */
+    @media (min-width: 769px) and (max-height: 860px) {
+      .card { padding: 16px 20px 14px; }
+      .card-title { padding-bottom: 7px; margin-bottom: 8px; }
+      .standings-table tbody td { padding: 3px 8px; }
+      .stack .card { padding: 11px 14px 9px; }
+      .stack .card-title { font-size: clamp(10px, 1vw, 14px); padding-bottom: 4px; margin-bottom: 5px; }
+      .stack .card-body { font-size: clamp(9px, 0.82vw, 12px); }
+      .stack .result-score { font-size: clamp(10px, 0.82vw, 12px); }
+      .stack .fact { padding: 0; }
+      .stack .fact dd { font-size: clamp(10px, 0.85vw, 13px); }
+      .stack .result-item { padding: 0; }
+      .result-item   { padding: 3px 0; }
+      .schedule-item { padding: 4px 0; }
+    }
+
     /* ═══════════════════════════════
        Mobile
     ═══════════════════════════════ */
@@ -423,7 +602,8 @@
 
       html, body {
         height: auto;
-        overflow: auto;
+        overflow-y: auto;
+        overflow-x: hidden;
       }
 
       body {
@@ -465,32 +645,36 @@
       /* Logo */
       .logo-slot {
         flex: none;
-        height: 220px;
+        height: 244px;
+        margin-top: clamp(18px, 7vw, 44px);
+        padding-bottom: 24px;
       }
 
-      /* Top row: logo goes full-width, then tabell+resultat side by side */
-      .row-top {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        grid-template-rows: auto auto;
-      }
+      /* ── Läsordning på mobil ──
+         Raderna och datumspalten löses upp så att alla kort blir syskon
+         under .grid och kan ordnas fritt. Ordningen följer hur man läser
+         en affisch: vad, när, anmäl — och först därefter detaljerna. */
+      .row-top,
+      .row-bottom,
+      .date-slot { display: contents; }
 
-      .row-top .logo-slot {
-        grid-column: 1 / -1;
-      }
+      .logo-slot     { order: 1; }
+      .date-lines    { order: 2; }
+      .anmal-btn     { order: 3; }
+      .card-schedule { order: 4; flex: none; }
+      .card-tabell   { order: 5; }
+      .stack         { order: 6; gap: 10px; }
 
-      /* Bottom row stacks */
-      .row-bottom {
-        flex-direction: column;
-      }
-
-      .card-schedule { flex: none; }
-
-      /* Date slot: stacks naturally */
-      .date-slot {
-        flex: none;
-        gap: 10px;
-      }
+      /* Trappningen följer den nya ordningen. Allt under vikten avslöjas
+         vid scroll, så de delayerna hålls korta. */
+      .date-line:nth-child(1) { animation-delay: .12s !important; }
+      .date-line:nth-child(2) { animation-delay: .17s !important; }
+      .date-line:nth-child(3) { animation-delay: .22s !important; }
+      .anmal-btn              { animation-delay: .28s !important; }
+      .card-schedule,
+      .card-tabell,
+      .stack .card:nth-child(1) { animation-delay: .1s !important; }
+      .stack .card:nth-child(2) { animation-delay: .18s !important; }
 
       .anmal-btn {
         flex: none;
@@ -500,8 +684,14 @@
       }
 
       .date-line {
-        font-size: 11vw;
+        font-size: 8.6vw;
       }
+
+      .place {
+        font-size: 11px;
+        letter-spacing: 0.24em;
+      }
+      .place span { margin-right: -0.24em; }
 
       /* Match card */
       .match-teams { flex: none; margin-bottom: 12px; }
@@ -521,9 +711,11 @@
       .schedule-detail { font-size: 10px; }
 
       /* About */
-      .about-text { font-size: 15px; }
+      .about-text { font-size: 15px; line-height: 1.5; }
+      .card-schedule .card-body { overflow-y: visible; }
     }
   </style>
+  <noscript><style>.anim { opacity: 1; }</style></noscript>
 </head>
 <body>
 
@@ -536,7 +728,7 @@
 
       <!-- Logo -->
       <div class="logo-slot anim" style="animation-delay:.05s">
-        <svg id="b" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" width="1000" height="1000" viewBox="0 0 1000 1000">
+        <svg role="img" aria-label="Boulekampen 2026" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000">
           <g id="c" data-name="ZG94JK">
             <g>
               <path d="M541.889,196.021c-9.049-31.692-14.363-63.534-16.038-96.408-6.777-3.925-13.003-8.434-18.636-13.879-2.732-2.547-6.359-3.559-9.875-2.515.534,40.886,6.28,80.588,17.52,120.039-76.581,23.207-145.626,66.071-200.741,124.673-28.811-21.811-59.4-40.051-92.374-54.529,1.924,10.644,2.281,20.74.699,31.075,25.829,12.427,50.082,27.141,73.07,44.521l-17.234,22.166c-20.055-15.125-41.365-28.235-64.269-39.579-4.255,8.526-9.595,16.049-16.361,23.157,23.151,11.171,44.389,24.018,64.779,39.525-20.081,31.412-36.158,64.775-48.189,100.43,8.627,6.766,15.634,14.818,21.638,24.365,11.216-37.879,27.241-73.192,47.948-106.27.057-.171.687-.422,1.02-.126,6.422,5.717,13.826,12.738,20.113,19.261-25.087,41.295-42.484,86.229-51.432,133.853l-32.543.012c-.103-22.573-12.277-43.229-31.689-54.36-17.568-10.517-23.677-32.853-14.081-50.866,11.926-22.387,9.093-49.447-6.647-69.212-12.425-15.602-10.5-38.731,4.62-51.856,19.061-16.546,27.179-42.483,19.481-66.859-6.02-19.063,3.57-40.463,22.761-47.305,24.331-8.675,41.018-30.492,42.714-56.417,1.326-20.274,19.047-35.588,39.165-35.031,25.471.704,48.296-13.941,58.987-36.834,8.317-17.81,29.769-26.646,48.057-19.031,23.961,9.978,50.897,5.286,69.683-12.803,14.181-13.655,37.469-13.88,51.791-.15,18.339,17.58,45.026,23.211,68.622,13.286,19.084-8.027,40.926.461,49.665,19.23,10.611,22.791,33.713,37.015,58.998,36.348,19.783-.522,37.377,14.664,38.724,34.579,1.755,25.961,18.075,47.974,42.59,56.7,19.239,6.847,29.079,28.216,22.965,47.471-7.767,24.462.618,50.452,19.6,66.966,16.051,13.964,16.299,37.4,3.488,53.423-15.752,19.702-16.697,46.702-5.226,68.587,9.296,17.737,2.496,39.69-14.498,49.735-11.361,6.715-20.233,16.147-25.773,28.184-3.598,7.817-5.644,15.915-5.876,24.62l-.036,1.368c-.007.273-.67.224-1.32.224l-301.188-.048c-19.263-67.25-53.499-128.819-100.542-180.897,46.282-49.065,104.848-84.745,169.524-102.897,25.768,51.147,60.326,96.36,102.577,134.527,38.741,34.921,82.94,62.882,131.051,82.831.973.157,1.478-.22,2.156-.831,4.696-4.236,9.703-7.782,15.109-11.029,3.113-1.87,4.862-4.854,5.059-8.681.03-.584-.881-1.043-1.72-1.365-45.203-17.386-86.967-42.349-123.919-73.809-42.017-35.881-76.714-79.301-102.314-128.397l29.377-4.661c24.425,44.286,56.738,83.18,95.484,115.344,27.604,22.836,57.976,41.856,90.526,56.556.482.218.939.366,1.208.453.241.078.088-1.008.06-1.262l-.072-.659-.072-.688c-.807-7.71-.628-15.307.595-22.97l.646-4.046c.01-.062.021-.367.03-.595-65.317-31.699-120.192-82.067-157.394-144.319l1.232-.219c.145-.026.591-.074.783-.078,41.91-.886,86.085,4.512,125.724,17.903l10.324,3.488.53.191,2.721.997.626.23c.145.053.544.194.581.079.056-.174.187-.796.191-1.154.09-8.795,1.677-18.093,4.435-26.784-52.059-18.519-106.879-25.876-162.089-22.076l-11.777-27.193c23.619-2.24,46.079-2.314,68.853-.892l.837.083.783.06c17.716,1.358,36.425,3.816,53.689,7.198.446.087.838-.101.76-.177-6.802-9.185-11.891-19.451-14.944-30.734-39.279-6.034-78.917-6.991-118.348-2.868-.484.051-.931.062-1.153.037s-.354-.61-.478-1.022c-5.936-19.633-10.504-39.437-12.807-59.842l-1.514-13.416-.17-1.592c-.033-.307-.763-.163-1.19-.117l-.739.079c-6.574.703-13.066.922-19.646.13l-4.752-.572-.651-.082-.776-.098c-.143-.018-.167.339-.272.778,2.229,27.025,7.152,53.52,14.798,79.738l-27.6,5.6Z"/>
@@ -569,10 +761,17 @@
             <path d="M669.598,917.671c-7.483,0-14.73.4-21.745,1.203-7.015.801-13.695,1.803-20.041,3.005l-1.403-16.433c4.409-1.068,8.834-2.037,13.277-2.907,4.442-.867,9.201-1.569,14.28-2.104,5.075-.534,10.687-.801,16.834-.801,5.945,0,11.355.267,16.233.801,4.875.535,9.235,1.37,13.077,2.505,3.841,1.137,7.064,2.623,9.669,4.459,2.605,1.838,4.593,4.093,5.963,6.764,1.369,2.674,2.055,5.779,2.055,9.32,0,2.941-.535,5.579-1.604,7.916-1.068,2.339-2.79,4.376-5.16,6.113-2.372,1.738-5.479,3.156-9.32,4.259-3.842,1.101-8.517,1.937-14.029,2.505-5.511.566-11.974.851-19.389.851-10.622,0-19.575-.768-26.855-2.304-7.282-1.536-13.144-3.841-17.586-6.914-4.443-3.071-7.65-6.864-9.62-11.373-1.971-4.509-2.956-9.77-2.956-15.782,0-4.943.934-9.335,2.805-13.177,1.87-3.841,4.526-7.13,7.966-9.87,3.441-2.738,7.516-5.011,12.225-6.814,4.71-1.803,9.954-3.122,15.733-3.957,5.778-.834,11.907-1.253,18.388-1.253,6.012,0,11.757.235,17.236.701,5.477.468,10.621,1.087,15.432,1.855,4.809.768,9.119,1.62,12.926,2.555l-4.209,21.645c-3.341-.801-6.964-1.553-10.872-2.255-3.908-.701-8.335-1.285-13.277-1.753-4.945-.467-10.689-.701-17.236-.701-6.413,0-11.641.285-15.682.851-4.042.568-7.182,1.42-9.42,2.556-2.238,1.137-3.791,2.555-4.659,4.259-.87,1.704-1.303,3.693-1.303,5.963,0,2.672.433,4.909,1.303,6.713.867,1.804,2.421,3.207,4.659,4.209,2.238,1.001,5.394,1.72,9.47,2.155,4.074.435,9.319.651,15.732.651,4.943,0,8.901-.033,11.874-.1,2.971-.066,5.194-.2,6.664-.401,1.469-.2,2.438-.466,2.905-.801.467-.333.703-.767.703-1.303,0-.601-.251-1.103-.752-1.503-.501-.401-1.471-.685-2.907-.852-1.437-.166-3.541-.284-6.312-.351-2.774-.066-6.464-.1-11.073-.1Z"/>
           </g>
         </svg>
+        <p class="place">
+          <svg class="pin" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M12 21.5c4.4-4.3 6.6-7.8 6.6-11a6.6 6.6 0 1 0-13.2 0c0 3.2 2.2 6.7 6.6 11Z"/>
+            <circle cx="12" cy="10.4" r="2.5"/>
+          </svg>
+          <span>Sundsvall</span>
+        </p>
       </div>
 
       <!-- Tabell -->
-      <div class="card anim" style="animation-delay:.15s">
+      <div class="card card-tabell anim" style="animation-delay:.15s">
         <div class="card-title">Tabell</div>
         <div class="card-body">
           <table class="standings-table">
@@ -627,39 +826,57 @@
         </div>
       </div>
 
-      <!-- Resultat -->
-      <div class="card anim" style="animation-delay:.25s">
-        <div class="card-title">Resultat</div>
-        <div class="card-body">
-          <div class="result-list">
-            <div class="result-item">
-              <span class="result-home">TBD</span>
-              <span class="result-score">– – –</span>
-              <span class="result-away">TBD</span>
-            </div>
-            <div class="result-item">
-              <span class="result-home">TBD</span>
-              <span class="result-score">– – –</span>
-              <span class="result-away">TBD</span>
-            </div>
-            <div class="result-item">
-              <span class="result-home">TBD</span>
-              <span class="result-score">– – –</span>
-              <span class="result-away">TBD</span>
-            </div>
-            <div class="result-item">
-              <span class="result-home">TBD</span>
-              <span class="result-score">– – –</span>
-              <span class="result-away">TBD</span>
-            </div>
-            <div class="result-item">
-              <span class="result-home">TBD</span>
-              <span class="result-score">– – –</span>
-              <span class="result-away">TBD</span>
+      <!-- Praktiskt + Resultat -->
+      <div class="stack">
+
+        <div class="card anim" style="animation-delay:.24s">
+          <div class="card-title">Praktiskt</div>
+          <div class="card-body">
+            <dl class="facts">
+              <div class="fact"><dt>Speldatum</dt><dd>Lör 28 nov 2026</dd></div>
+              <div class="fact"><dt>Plats</dt><dd>Sundsvall</dd></div>
+              <div class="fact"><dt>Lagstorlek</dt><dd>4 personer</dd></div>
+              <div class="fact"><dt>Avgift</dt><dd>2 000 kr / lag</dd></div>
+              <div class="fact"><dt>Anmälan senast</dt><dd>15 nov 2026</dd></div>
+            </dl>
+          </div>
+        </div>
+
+        <!-- Resultat -->
+        <div class="card anim" style="animation-delay:.32s">
+          <div class="card-title">Resultat</div>
+          <div class="card-body">
+            <div class="result-list">
+              <div class="result-item">
+                <span class="result-home">TBD</span>
+                <span class="result-score">– – –</span>
+                <span class="result-away">TBD</span>
+              </div>
+              <div class="result-item">
+                <span class="result-home">TBD</span>
+                <span class="result-score">– – –</span>
+                <span class="result-away">TBD</span>
+              </div>
+              <div class="result-item">
+                <span class="result-home">TBD</span>
+                <span class="result-score">– – –</span>
+                <span class="result-away">TBD</span>
+              </div>
+              <div class="result-item">
+                <span class="result-home">TBD</span>
+                <span class="result-score">– – –</span>
+                <span class="result-away">TBD</span>
+              </div>
+              <div class="result-item">
+                <span class="result-home">TBD</span>
+                <span class="result-score">– – –</span>
+                <span class="result-away">TBD</span>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+
+      </div><!-- /stack -->
 
     </div><!-- /row-top -->
 
@@ -671,13 +888,13 @@
         <div class="card-title">Om turneringen</div>
         <div class="card-body">
           <div class="about-text">
-            <p>Damma av kloten för nu är det dags igen… Boulekampen gör retur för femte gången, denna gång redan i maj 2026.</p>
+            <p>Damma av kloten för nu är det dags igen… Boulekampen gör retur för femte gången, denna gång i november 2026.</p>
             <p>Under dagen kommer det att bjudas på intensiva matcher, tid för mingel, en smakfull lunch och massor av bra musik. Och ja – ta med er egen dryck, för även om sport och alkohol inte alltid går hand i hand så är detta ett undantag.</p>
             <p>När turneringen är avgjord firar vi storslaget på vår officiella "After Boule", där vi intar LOKAL för en lyxig middagsbuffé och en välkomstdrink.</p>
             <ul>
               <li>Samla ihop ett lag på 4 personer</li>
-              <li>Anmäl er senast 8 maj</li>
-              <li>Anmälningsavgift: 2 400 kr/lag</li>
+              <li>Anmäl er senast 15 november</li>
+              <li>Anmälningsavgift: 2 000 kr/lag</li>
             </ul>
             <p>I år ska man även komma utklädd, och för titeln bästa lagutklädnad utlovas ett storslaget pris.</p>
             <p>Ni tävlar inte bara om ära, vandringspokalen och evig stolthet – utan också om att skapa en dag ni sent kommer att glömma. Nu är det upp till er – gör hösten oförglömlig och boka er plats på årets roligaste turnering.</p>
@@ -687,9 +904,9 @@
 
       <!-- Datum / hype -->
       <div class="date-slot">
-        <a href="anmal.html" class="anmal-btn anim" style="animation-delay:.4s">ANMÄL DITT LAG HÄR</a>
+        <a href="anmal.html" class="anmal-btn anim" style="animation-delay:.4s"><span>ANMÄL DITT LAG HÄR</span></a>
         <div class="date-lines">
-          <div class="date-line anim" style="animation-delay:.5s">23 MAJ 2026</div>
+          <div class="date-line anim" style="animation-delay:.5s">28 NOV 2026</div>
           <div class="date-line anim" style="animation-delay:.6s">SUNDSVALL</div>
           <div class="date-line anim" style="animation-delay:.7s">GÖR ER REDO</div>
         </div>
@@ -704,7 +921,139 @@
     document.addEventListener('mousemove', e => {
       cursor.style.left = e.clientX + 'px';
       cursor.style.top  = e.clientY + 'px';
+      cursor.classList.add('is-live'); // döljs tills musen faktiskt rörts
     });
+
+    // Lillen växer när den är över något klickbart
+    const hotSel = 'a, button, input, label, select, textarea, [role="button"]';
+    document.addEventListener('pointerover', e => {
+      cursor.classList.toggle('is-hot', !!(e.target.closest && e.target.closest(hotSel)));
+    }, { passive: true });
+
+
+    // Sidövergång: blobben växer ur knappen, texten försvinner uppåt och
+    // anmälningssidan tonar in bakom samma färg. Slöjan på nästa sida
+    // triggas av en flagga i sessionStorage.
+    (function () {
+      const cta = document.querySelector('.anmal-btn');
+      if (!cta) return;
+
+      const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+      function flag() {
+        try { sessionStorage.setItem('bk-cta-transition', '1'); } catch (e) {}
+      }
+
+      cta.addEventListener('click', function (e) {
+        // Låt webbläsaren sköta nytt fönster/flik och reducerad rörelse
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+        if (reduced.matches) { flag(); return; }
+
+        e.preventDefault();
+        cta.classList.add('is-launching');
+
+        const r = cta.getBoundingClientRect();
+        const cx = r.left + r.width / 2;
+        const cy = r.top + r.height / 2;
+        const start = 60;
+        const far = Math.hypot(
+          Math.max(cx, window.innerWidth - cx),
+          Math.max(cy, window.innerHeight - cy)
+        );
+
+        const blob = document.createElement('div');
+        blob.className = 'page-blob';
+        blob.style.width = start + 'px';
+        blob.style.height = start + 'px';
+        blob.style.left = (cx - start / 2) + 'px';
+        blob.style.top = (cy - start / 2) + 'px';
+        document.body.appendChild(blob);
+
+        const k = (far * 2) / start + 0.25;
+
+        // Två parallella animationer: expansionen får sin egen kurva medan
+        // färgen hinner landa på bakgrundsgrönt innan blobben täckt skärmen.
+        // Då är sista bildrutan redan samma grön som nästa sida.
+        blob.animate(
+          [{ transform: 'scale(0.02)' }, { transform: 'scale(' + k.toFixed(2) + ')' }],
+          { duration: 620, easing: 'cubic-bezier(0.62, 0, 0.28, 1)', fill: 'forwards' }
+        );
+        blob.animate(
+          [{ backgroundColor: '#f9ff00' }, { backgroundColor: '#093000' }],
+          { duration: 460, easing: 'ease-in', fill: 'forwards' }
+        );
+
+        flag();
+        setTimeout(function () { location.href = cta.href; }, 540);
+      });
+
+      // Tillbaka via bakåtknappen kan återställa sidan ur bfcache — städa upp
+      window.addEventListener('pageshow', function () {
+        cta.classList.remove('is-launching');
+        document.querySelectorAll('.page-blob').forEach(function (b) { b.remove(); });
+      });
+    })();
+
+    // Om-texten fyller kortet. Kortet har fast höjd i desktop-läget, och
+    // hur många rader texten tar beror på både bredd och höjd — därför mäts
+    // största storlek som får plats istället för en gissad clamp.
+    (function () {
+      const body = document.querySelector('.card-schedule .card-body');
+      const text = document.querySelector('.about-text');
+      if (!body || !text) return;
+
+      const locked = window.matchMedia('(min-width: 769px)');
+
+      function fit() {
+        if (!locked.matches) { text.style.fontSize = ''; return; }
+        let lo = 11, hi = 22, best = lo;
+        for (let i = 0; i < 12; i++) {
+          const mid = (lo + hi) / 2;
+          text.style.fontSize = mid + 'px';
+          if (body.scrollHeight <= body.clientHeight) { best = mid; lo = mid; }
+          else { hi = mid; }
+        }
+        text.style.fontSize = best.toFixed(1) + 'px';
+        // Skyddsnät om mätningen hamnade snett
+        for (let g = 0; g < 8 && body.scrollHeight > body.clientHeight && best > 10; g++) {
+          best -= 0.5;
+          text.style.fontSize = best.toFixed(1) + 'px';
+        }
+      }
+
+      fit();
+      addEventListener('resize', fit);
+      locked.addEventListener('change', fit);
+      // Fonterna ändrar radbrytningen — mät om när de laddat
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+    })();
+
+    // Reveal vid sidladdning och vid scroll. Samma animation och delays
+    // som förut — skillnaden är att det som ligger under vikten på mobil
+    // väntar tills man scrollar dit.
+    (function () {
+      const targets = document.querySelectorAll('.anim');
+      const showAll = () => targets.forEach(el => el.classList.add('in'));
+
+      if (!('IntersectionObserver' in window)) { showAll(); return; }
+
+      // Desktop-affischen scrollar inte — då får ingen bottenmarginal
+      // hindra sista raden från att triggas.
+      const scrolls = document.documentElement.scrollHeight > window.innerHeight + 4;
+      const io = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+          if (!entry.isIntersecting) return;
+          entry.target.classList.add('in');
+          io.unobserve(entry.target);
+        });
+      }, { threshold: 0, rootMargin: scrolls ? '0px 0px -10% 0px' : '0px' });
+
+      targets.forEach(el => io.observe(el));
+
+      // Skyddsnät: inget ska kunna bli hängande osynligt.
+      window.addEventListener('load', () => setTimeout(showAll, 400));
+      setTimeout(showAll, 1200);
+    })();
   </script>
 
 </body>
