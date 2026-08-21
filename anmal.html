@@ -319,7 +319,14 @@
       padding: 1.2em 0 0.5em;
     }
 
-    .thankyou-icon { font-size: 3em; margin-bottom: 0.35em; }
+    /* Urklippt bild med genomskinlig bakgrund — ligger som ett klistermärke
+       på det gula kortet. Höjden i em följer kortets skala. */
+    .thankyou-icon {
+      display: block;
+      height: 13em;
+      width: auto;
+      margin-bottom: 0.5em;
+    }
 
     .thankyou h3 {
       font-family: 'Panchang', sans-serif;
@@ -485,7 +492,8 @@
       </div>
 
       <div class="thankyou" id="thankyou">
-        <div class="thankyou-icon">🎯</div>
+        <img class="thankyou-icon" src="assets/images/alex.png"
+             alt="Alex ger tummen upp" width="249" height="480">
         <h3>Anmälan mottagen!</h3>
         <p>Välkomna till Boulekampen 2026. Vi ses i Sundsvall den 28 november!</p>
       </div>
