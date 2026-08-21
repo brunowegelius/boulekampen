@@ -199,6 +199,30 @@
       margin-bottom: 0.35em;
     }
 
+    /* Platsräknaren. Döljs tills Apps Script svarat — syns aldrig tom. */
+    .form-slots {
+      display: none;
+      align-items: center;
+      gap: 0.55em;
+      font-family: 'Panchang', sans-serif;
+      font-weight: 700;
+      font-size: 0.8em;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 1.1em;
+    }
+    .form-slots.is-shown { display: flex; }
+
+    .form-slots::before {
+      content: '';
+      width: 0.6em;
+      height: 0.6em;
+      border-radius: 50%;
+      background: #093000;
+      flex-shrink: 0;
+    }
+    .form-slots.is-low::before { background: #e0740b; }
+
     .form-desc {
       font-size: 0.92em;
       line-height: 1.5;
@@ -446,6 +470,7 @@
       <div id="form-content">
         <p class="form-event">Boulekampen &middot; 28 november 2026 &middot; Sundsvall</p>
         <h2>Anmälan</h2>
+        <p class="form-slots" id="form-slots"></p>
         <p class="form-desc">Anmäl ditt lag till årets mest prestigefyllda bouleturnering. Fyll i lagkaptenens uppgifter och bekräfta betalningen.</p>
 
     <form id="anmal-form" action="https://docs.google.com/forms/d/e/1FAIpQLSfJrLLgrqOMfd79JGpsna7QY8V1l_9mcshnvYdGvfgYhG08CQ/formResponse" method="POST" target="hidden-iframe" enctype="application/x-www-form-urlencoded">
@@ -489,6 +514,13 @@
             <button type="submit" class="submit-btn">Skicka anmälan</button>
 
           </form>
+      </div>
+
+      <div class="thankyou" id="soldout">
+        <img class="thankyou-icon" src="assets/images/alex.png"
+             alt="Alex ger tummen upp" width="249" height="480">
+        <h3>Fullbokat</h3>
+        <p id="soldout-text">Alla platser är tagna. Hör av er till arrangörerna om ni vill stå på reservlista.</p>
       </div>
 
       <div class="thankyou" id="thankyou">
@@ -569,30 +601,103 @@
       window.__bkFitForm = fit;
     })();
 
-    // Formuläret postar till Google Forms i en dold iframe. Tack-läget visas
-    // när iframen laddat svaret, med timeout som skyddsnät om load-eventet
-    // uteblir. Submit-eventet avfyras först när valideringen gått igenom.
-    (function () {
-      var form   = document.getElementById('anmal-form');
-      var frame  = document.getElementById('hidden-iframe');
-      var submit = form.querySelector('.submit-btn');
-      var sent = false, shown = false;
+    // ── Platstak ────────────────────────────────────────────────────────
+    // Taket hålls av ett Apps Script på formuläret — det är enda stället
+    // det går att hålla på riktigt, sajten är statisk. Räknaren här är för
+    // att visa läget och slippa låtsas att en anmälan gick in när det är
+    // fullt. Tom URL = räknaren av, sidan beter sig som utan tak.
+    var COUNTER_URL = '';
 
-      function showThankYou() {
-        if (shown) return;
-        shown = true;
+    // JSONP i stället för fetch: Apps Script omdirigerar till
+    // googleusercontent.com och CORS-svaret är inte att lita på.
+    var jsonpSeq = 0;
+    function fetchStatus(cb) {
+      if (!COUNTER_URL) { cb(null); return; }
+      var name = '__bkSlots' + (++jsonpSeq);
+      var el = document.createElement('script');
+      var done = false;
+
+      function cleanup() {
+        try { delete window[name]; } catch (e) { window[name] = undefined; }
+        if (el.parentNode) el.parentNode.removeChild(el);
+      }
+      window[name] = function (data) { done = true; cleanup(); cb(data); };
+      el.onerror = function () { if (!done) { cleanup(); cb(null); } };
+      setTimeout(function () { if (!done) { cleanup(); cb(null); } }, 6000);
+
+      el.src = COUNTER_URL + (COUNTER_URL.indexOf('?') > -1 ? '&' : '?') +
+               'callback=' + name + '&_=' + (+new Date());
+      document.head.appendChild(el);
+    }
+
+    (function () {
+      var form    = document.getElementById('anmal-form');
+      var frame   = document.getElementById('hidden-iframe');
+      var submit  = form.querySelector('.submit-btn');
+      var slots   = document.getElementById('form-slots');
+      var soldout = document.getElementById('soldout');
+      var sent = false, shown = false, cleared = false;
+
+      function swapTo(el) {
         document.getElementById('form-content').style.display = 'none';
-        document.getElementById('thankyou').style.display = 'flex';
+        el.style.display = 'flex';
         if (window.__bkFitForm) window.__bkFitForm();
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
 
+      function showThankYou() {
+        if (shown) return;
+        shown = true;
+        swapTo(document.getElementById('thankyou'));
+      }
+
+      function showSoldOut(data) {
+        if (shown) return;
+        shown = true;
+        if (data && data.cap) {
+          document.getElementById('soldout-text').textContent =
+            'Alla ' + data.cap + ' platser är tagna. Hör av er till arrangörerna ' +
+            'om ni vill stå på reservlista.';
+        }
+        swapTo(soldout);
+      }
+
+      function render(data) {
+        if (!data) return;                       // ingen kontakt → visa formuläret
+        if (!data.open) { showSoldOut(data); return; }
+        slots.textContent = data.left === 1
+          ? 'Sista platsen kvar'
+          : data.left + ' av ' + data.cap + ' platser kvar';
+        slots.classList.toggle('is-low', data.left <= 3);
+        slots.classList.add('is-shown');
+        if (window.__bkFitForm) window.__bkFitForm();
+      }
+
+      fetchStatus(render);
+
       frame.addEventListener('load', function () { if (sent) showThankYou(); });
 
-      form.addEventListener('submit', function () {
+      function send() {
         sent = true;
         setTimeout(function () { submit.disabled = true; }, 0);
         setTimeout(showThankYou, 2500);
+      }
+
+      form.addEventListener('submit', function (e) {
+        // submit-eventet avfyras först när webbläsarens validering gått igenom
+        if (!COUNTER_URL || cleared) { send(); return; }
+
+        // Kolla en gång till precis innan inskicket — någon annan kan ha
+        // tagit sista platsen medan formuläret fylldes i.
+        e.preventDefault();
+        submit.disabled = true;
+        fetchStatus(function (data) {
+          if (data && !data.open) { showSoldOut(data); return; }
+          cleared = true;
+          submit.disabled = false;
+          send();
+          form.submit();   // postar utan att avfyra submit-eventet igen
+        });
       });
     })();
 

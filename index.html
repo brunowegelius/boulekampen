@@ -235,8 +235,9 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      background: #ea2910;
-      color: #f9ff00;
+      background: #e0740b;
+      /* Mörkgrön text: gult mot den här orangen ger bara 2,9:1 kontrast */
+      color: #093000;
       transition: background 0.3s cubic-bezier(0.22, 1, 0.36, 1),
                   color 0.3s cubic-bezier(0.22, 1, 0.36, 1);
       font-family: 'Panchang', sans-serif;
@@ -256,6 +257,7 @@
       /* Ingen lyftning: .date-slot har overflow:hidden och kapade knappens
          överkant, vilket såg ut som att lådan försvann in i mellanrummet. */
       .anmal-btn:hover { background: #f9ff00; color: #093000; }
+      .anmal-btn.is-closed { background: #093000; color: #f9ff00; opacity: .55; }
     }
 
     /* ═══════════════════════════════
@@ -939,6 +941,39 @@
     }, { passive: true });
 
 
+    // ── Platstak ────────────────────────────────────────────────────────
+    // Taket hålls av Apps Script på formuläret. Här läses bara läget för
+    // att slippa skicka folk till en anmälan som är stängd.
+    // Tom URL = av. Måste vara samma URL som i anmal.html.
+    var COUNTER_URL = '';
+
+    (function () {
+      if (!COUNTER_URL) return;
+      var cta = document.querySelector('.anmal-btn');
+      if (!cta) return;
+
+      var name = '__bkSlotsIdx';
+      var el = document.createElement('script');
+      var done = false;
+
+      function cleanup() {
+        try { delete window[name]; } catch (e) { window[name] = undefined; }
+        if (el.parentNode) el.parentNode.removeChild(el);
+      }
+      window[name] = function (data) {
+        done = true; cleanup();
+        if (!data || data.open) return;
+        cta.classList.add('is-closed');
+        cta.querySelector('span').firstChild.nodeValue = 'FULLBOKAT';
+        cta.setAttribute('aria-disabled', 'true');
+      };
+      el.onerror = function () { if (!done) cleanup(); };
+      setTimeout(function () { if (!done) cleanup(); }, 6000);
+      el.src = COUNTER_URL + (COUNTER_URL.indexOf('?') > -1 ? '&' : '?') +
+               'callback=' + name + '&_=' + (+new Date());
+      document.head.appendChild(el);
+    })();
+
     // Sidövergång: blobben växer ur knappen, texten försvinner uppåt och
     // anmälningssidan tonar in bakom samma färg. Slöjan på nästa sida
     // triggas av en flagga i sessionStorage.
@@ -953,6 +988,8 @@
       }
 
       cta.addEventListener('click', function (e) {
+        // Stängd anmälan: gå ingenstans
+        if (cta.classList.contains('is-closed')) { e.preventDefault(); return; }
         // Låt webbläsaren sköta nytt fönster/flik och reducerad rörelse
         if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
         if (reduced.matches) { flag(); return; }
