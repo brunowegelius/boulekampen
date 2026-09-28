@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#093000">
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="../assets/favicon/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="../assets/favicon/apple-touch-icon.png">
+  <title>Anmälan · Boulekampen</title>
+  <link rel="stylesheet" href="../app/ui.css">
+  <style>
+    .wrap { max-width: 520px; margin: 0 auto; padding: clamp(28px, 8vw, 64px) 20px 60px; }
+    .logo { width: clamp(120px, 34vw, 170px); margin-bottom: 30px; }
+    h1 { font-size: clamp(30px, 9vw, 48px); }
+    .lead { margin-top: 12px; color: var(--muted); font-size: 17px; }
+    form { display: grid; gap: 16px; margin-top: 30px; }
+    .note { font-size: 13px; color: var(--faint); }
+    .code-row { display: flex; gap: 10px; }
+    .code-row input { text-transform: uppercase; letter-spacing: 0.2em; font-family: var(--display); font-weight: 700; }
+    .done { text-align: left; }
+    .done .num { font-size: clamp(56px, 18vw, 96px); color: var(--hi); line-height: 0.9; }
+    .done h1 { animation: pop 0.8s var(--spring) both; }
+    @keyframes pop { from { transform: scale(0.8); opacity: 0; } }
+  </style>
+</head>
+<body>
+  <div id="demo"></div>
+  <main class="wrap" id="app"></main>
+  <script type="module">
+    import { db } from '../app/db.js';
+    import { esc, $, params, toast, reveal, demoBar, fmtDate, pageUrl, store } from '../app/ui.js';
+
+    $('#demo').innerHTML = demoBar();
+    const app = $('#app');
+    let code = (params().get('k') || '').toUpperCase();
+
+    async function boot() {
+      if (!code) return askCode();
+      let ev;
+      try { ev = await db.eventByCode(code); }
+      catch (e) { app.innerHTML = `<i class="logo"></i><div class="empty"><strong>Ingen kontakt</strong>Kolla nätet och ladda om sidan.</div>`; return; }
+      if (!ev) return askCode('Hittar ingen aktivitet med koden ' + code + '.');
+      const done = store('bk-joined-' + code);
+      if (done) return thanks(ev, done);
+      if (!ev.open) {
+        app.innerHTML = `<i class="logo rv" aria-hidden="true"></i><h1 class="rv">${esc(ev.name)}</h1>
+          <p class="lead rv">Anmälan är stängd. Prata med arrangören på plats.</p>
+          <a class="btn ghost rv" style="margin-top:24px" href="${pageUrl('live', ev.slug)}">Följ resultaten live</a>`;
+        return reveal(app);
+      }
+      app.innerHTML = `
+        <i class="logo rv" aria-hidden="true"></i>
+        <h1 class="rv">${esc(ev.company ? 'Hej ' + ev.company + '!' : ev.name)}</h1>
+        <p class="lead rv">Skriv in dig så hamnar du i ett lag. ${esc([fmtDate(ev.date, { weekday: 'long', day: 'numeric', month: 'long' }), ev.venue].filter(Boolean).join(', '))}.</p>
+        <form id="f" class="rv" novalidate>
+          <label class="field"><span>Ditt namn</span><input name="name" required maxlength="60" autocomplete="name" placeholder="T.ex. Maja B."></label>
+          <label class="field"><span>Avdelning eller team</span><input name="department" maxlength="60" placeholder="Så att lagen blandas över avdelningarna"></label>
+          <label class="field"><span>Specialkost</span><input name="diet" maxlength="300" placeholder="Allergier, vegetariskt …"></label>
+          <p class="note">Namnet syns i tabellerna under dagen. Specialkosten ser bara arrangören, och den raderas efter eventet.</p>
+          <button class="btn lg">Anmäl mig</button>
+        </form>`;
+      reveal(app);
+      $('#f').addEventListener('submit', async e => {
+        e.preventDefault();
+        const f = Object.fromEntries(new FormData(e.target));
+        if (!f.name.trim()) { toast('Skriv ditt namn'); e.target.name.focus(); return; }
+        const btn = e.target.querySelector('button');
+        btn.disabled = true;
+        try {
+          const r = await db.joinEvent(code, f);
+          if (!r.ok) {
+            toast({ closed: 'Anmälan har stängt', code: 'Koden gäller inte längre', name: 'Skriv ditt namn', full: 'Det är fullt' }[r.error] || 'Det gick inte att anmäla dig');
+            btn.disabled = false;
+            return;
+          }
+          const saved = { name: f.name.trim(), player: r.player_id };
+          store('bk-joined-' + code, saved);
+          // Livesidan följer spelaren direkt
+          try { const e2 = await db.events.bySlug(r.slug); if (e2) store('bk-mine-' + e2.id, r.player_id); } catch (err) {}
+          thanks(ev, saved);
+        } catch (err) { toast('Ingen kontakt. Försök igen.'); btn.disabled = false; }
+      });
+    }
+
+    function thanks(ev, saved) {
+      app.innerHTML = `<div class="done">
+        <i class="logo rv" aria-hidden="true"></i>
+        <h1>Du är med, ${esc(saved.name.split(' ')[0])}!</h1>
+        <p class="lead rv">Lagen lottas på plats. Följ din bana, dina matcher och tabellen här:</p>
+        <a class="btn lg rv" style="margin-top:26px" href="${pageUrl('live', ev.slug)}">Till livesidan</a>
+        <p class="note rv" style="margin-top:22px">Anmälde du fel namn? <button class="muted" style="text-decoration:underline" id="again">Anmäl igen</button></p>
+      </div>`;
+      reveal(app);
+      $('#again').addEventListener('click', () => { store('bk-joined-' + code, null); boot(); });
+    }
+
+    function askCode(msg) {
+      app.innerHTML = `<i class="logo rv" aria-hidden="true"></i><h1 class="rv">Anmälan</h1>
+        <p class="lead rv">${esc(msg || 'Skriv in koden som står på skylten.')}</p>
+        <form id="c" class="rv"><div class="code-row"><input class="input" name="k" required maxlength="8" autocomplete="off" autocapitalize="characters" aria-label="Kod" value="${esc(code)}"><button class="btn">Fortsätt</button></div></form>`;
+      reveal(app);
+      $('#c').addEventListener('submit', e => {
+        e.preventDefault();
+        code = e.target.k.value.trim().toUpperCase();
+        history.replaceState(null, '', '?k=' + encodeURIComponent(code));
+        boot();
+      });
+    }
+
+    boot();
+  </script>
+</body>
+</html>

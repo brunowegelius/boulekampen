@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#093000">
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="../assets/favicon/favicon.svg" type="image/svg+xml">
+  <title>Storbild · Boulekampen</title>
+  <link rel="stylesheet" href="../app/ui.css">
+  <style>
+    /* Allt skalas mot fönstret så att samma vy fungerar på en 40"-tv och en projektor. */
+    html, body { height: 100%; overflow: hidden; }
+    body { cursor: none; font-size: 1.25vw; }
+    body.mouse { cursor: default; }
+    /* minmax(0, …): annars trycker tickerns långa rad ut hela rutnätet */
+    .screen { height: 100vh; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; grid-template-columns: minmax(0, 1fr); padding: 2.2vw 3vw 1.6vw; gap: 1.6vw; }
+    .ticker > div { min-width: 0; }
+
+    .sb-top { display: grid; grid-template-columns: auto 1fr auto; gap: 2.4vw; align-items: center; }
+    .sb-top .logo { width: 7.5vw; }
+    .sb-top .name { font-family: var(--display); font-weight: 800; text-transform: uppercase; font-size: 2.4vw; line-height: 1; }
+    .sb-top .name small { display: block; font-family: var(--body); font-weight: normal; text-transform: none; font-size: 1.2vw; color: var(--muted); margin-top: 0.6vw; }
+    .sb-top .co { max-height: 3.6vw; max-width: 14vw; object-fit: contain; margin-top: 0.6vw; }
+    .sb-clock { text-align: right; font-family: var(--display); font-weight: 800; font-variant-numeric: tabular-nums; }
+    .sb-clock .now { font-size: 2.4vw; }
+    .sb-clock .tm { font-size: 1.1vw; font-family: var(--body); font-weight: normal; color: var(--muted); }
+    .sb-clock .count { font-size: 4.2vw; color: var(--hi); line-height: 1; }
+    .sb-clock .count.out { animation: blink 1s steps(2) infinite; }
+    @keyframes blink { 50% { opacity: 0.3; } }
+
+    .stage { position: relative; min-height: 0; overflow: hidden; }
+    .panel-sb { position: absolute; inset: 0; display: flex; flex-direction: column; }
+    .panel-sb.enter { animation: p-in 0.9s var(--ease) both; }
+    .panel-sb.leave { animation: p-out 0.5s var(--ease) both; }
+    @keyframes p-in { from { opacity: 0; transform: translateY(2vw); } }
+    @keyframes p-out { to { opacity: 0; transform: translateY(-1.5vw); } }
+    .ptitle { font-family: var(--display); font-weight: 800; text-transform: uppercase; font-size: 3.4vw; line-height: 1; margin-bottom: 1.6vw; display: flex; justify-content: space-between; align-items: baseline; gap: 2vw; }
+    .ptitle small { font-family: var(--body); font-weight: normal; font-size: 1.3vw; text-transform: none; color: var(--muted); }
+
+    /* Tabeller */
+    .sb-groups { display: grid; gap: 1.4vw 2.4vw; flex: 1; min-height: 0; align-content: start; }
+    .sb-groups h3 { font-size: 1.5vw; color: var(--hi); margin-bottom: 0.5vw; }
+    .sb-t { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+    .sb-t td { padding: 0.55vw 0.5vw; border-top: 1px solid var(--line); font-size: 1.35vw; text-align: center; white-space: nowrap; }
+    .sb-t td.n { text-align: left; width: 100%; }
+    .sb-t td.r { font-family: var(--display); font-weight: 700; color: var(--faint); width: 2vw; }
+    .sb-t td.p { font-family: var(--display); font-weight: 800; font-size: 1.6vw; }
+    .sb-t td.m { color: var(--muted); font-size: 1.15vw; }
+    .sb-t tr.q td.r { color: var(--ink); }
+    .sb-t tr.lead td.p, .sb-t tr.lead td.r { color: var(--hi); }
+    .sb-t tr.cut td { border-top: 2px dashed rgba(241, 255, 231, 0.3); }
+    .sb-t.dense td { padding: 0.35vw 0.5vw; font-size: 1.15vw; }
+
+    /* Banor */
+    .courts-sb { display: grid; gap: 1.2vw; grid-template-columns: repeat(auto-fill, minmax(26vw, 1fr)); align-content: start; }
+    .ct { border-radius: 1.2vw; background: var(--raise); padding: 1.1vw 1.4vw; display: grid; grid-template-columns: 1fr auto; gap: 0.4vw 1vw; align-items: center; }
+    .ct.live { box-shadow: inset 0 0 0 0.2vw var(--hi); }
+    .ct .cn { grid-column: 1 / -1; font-size: 1vw; color: var(--muted); display: flex; justify-content: space-between; }
+    .ct .tn { font-size: 1.45vw; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ct .tn.w { color: var(--hi); }
+    .ct .sc { font-family: var(--display); font-weight: 800; font-size: 2.2vw; line-height: 1.2; min-height: 2.64vw; text-align: right; font-variant-numeric: tabular-nums; }
+    .ct.live .sc { color: var(--hi); }
+    .ct .ph { color: var(--faint); }
+
+    /* Träd */
+    .stage .bracket { gap: 2vw; grid-auto-columns: minmax(15vw, 1fr); overflow: hidden; flex: 1; }
+    .stage .bm .side { font-size: 1.25vw; padding: 0.6vw 0.9vw; }
+    .stage .bm .when { font-size: 0.9vw; padding: 0 0.9vw 0.5vw; }
+    .stage .bracket .col-title { font-size: 1vw; }
+    .stage .bm { border-radius: 0.8vw; }
+
+    /* Resultat */
+    .res-list { columns: 2; column-gap: 4vw; }
+    .res { break-inside: avoid; display: grid; grid-template-columns: 1fr auto 1fr; gap: 1vw; padding: 0.9vw 0; border-top: 1px solid var(--line); font-size: 1.45vw; align-items: center; }
+    .res .a { text-align: right; } .res .w { color: var(--hi); }
+    .res .s { font-family: var(--display); font-weight: 800; font-size: 1.8vw; min-width: 7vw; text-align: center; }
+
+    /* Välkommen */
+    .welcome { display: grid; grid-template-columns: 1.1fr 1fr; gap: 4vw; align-items: center; flex: 1; }
+    .welcome h2 { font-size: 5vw; color: var(--hi); line-height: 0.95; }
+    .welcome p { font-size: 1.8vw; margin-top: 1.6vw; color: var(--muted); max-width: 32ch; }
+    .welcome .url { font-family: var(--display); font-weight: 700; font-size: 1.7vw; color: var(--ink); margin-top: 1.6vw; }
+    .qrs { display: flex; gap: 3vw; justify-content: center; }
+    .qrs figure { display: grid; gap: 1vw; justify-items: center; }
+    .qrs .q { width: 20vw; }
+    .qrs.two .q { width: 16vw; }
+    .qrs figcaption { font-family: var(--display); font-weight: 700; text-transform: uppercase; font-size: 1.3vw; }
+
+    /* Lottning */
+    .draw { display: grid; grid-template-columns: repeat(var(--g), 1fr); gap: 1.6vw; flex: 1; align-content: start; }
+    .draw h3 { font-size: 2vw; color: var(--hi); margin-bottom: 0.8vw; }
+    .draw .slot { height: 3.6vw; border-radius: 0.8vw; margin-bottom: 0.7vw; display: flex; align-items: center; padding: 0 1vw; font-size: 1.5vw; box-shadow: inset 0 0 0 1px var(--line); }
+    .draw .slot.fill { background: var(--raise); box-shadow: none; }
+    .draw .slot.just { animation: drop-in 0.9s var(--spring) both; background: var(--hi); color: var(--bg); }
+    @keyframes drop-in { from { transform: translateY(-1.6vw) scale(1.06); opacity: 0; } }
+    .draw-now { position: absolute; right: 0; bottom: 0; font-family: var(--display); font-weight: 800; text-transform: uppercase; font-size: 1.4vw; color: var(--muted); }
+
+    /* Röstning */
+    .vote-reveal { display: grid; gap: 0.9vw; flex: 1; align-content: center; }
+    .vr { display: grid; grid-template-columns: 22vw 1fr 5vw; gap: 1.6vw; align-items: center; font-size: 1.6vw; opacity: 0; animation: vr-in 0.7s var(--ease) forwards; }
+    .vr .bar { height: 2.2vw; border-radius: 99px; background: var(--raise); overflow: hidden; }
+    .vr .bar i { display: block; height: 100%; background: var(--ink); border-radius: 99px; width: 0; transition: width 1.6s var(--ease); }
+    .vr.top .bar i { background: var(--hi); }
+    .vr.top { color: var(--hi); font-size: 2.2vw; }
+    .vr .c { font-family: var(--display); font-weight: 800; text-align: right; }
+    @keyframes vr-in { from { opacity: 0; transform: translateX(-2vw); } to { opacity: 1; transform: none; } }
+
+    /* Utmaningar */
+    .ch-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(28vw, 1fr)); gap: 2vw 3vw; }
+    .ch-grid h3 { font-size: 1.6vw; color: var(--hi); margin-bottom: 0.6vw; }
+
+    /* Botten: utrop eller senaste resultat */
+    .ticker { height: 3.4vw; border-radius: 99px; overflow: hidden; position: relative; display: flex; align-items: center; background: var(--raise); }
+    .ticker.hi { background: var(--hi); color: var(--bg); }
+    .ticker .lbl { flex-shrink: 0; font-family: var(--display); font-weight: 800; text-transform: uppercase; font-size: 1vw; padding: 0 1.6vw; height: 100%; display: flex; align-items: center; }
+    .ticker .run { white-space: nowrap; font-size: 1.4vw; display: inline-block; padding-left: 100%; animation: marquee var(--dur, 40s) linear infinite; }
+    .ticker .run.static { padding-left: 0; animation: none; }
+    .ticker .run b { font-family: var(--display); font-weight: 800; margin: 0 0.4vw; }
+    .ticker .run .dot { opacity: 0.4; margin: 0 1.4vw; }
+    @keyframes marquee { to { transform: translateX(-100%); } }
+    .dots { display: flex; gap: 0.5vw; justify-content: center; margin-top: 0.8vw; }
+    .dots i { width: 0.5vw; height: 0.5vw; border-radius: 50%; background: var(--line); transition: background 0.3s, width 0.4s var(--ease); }
+    .dots i.on { background: var(--hi); width: 1.8vw; border-radius: 99px; }
+
+    /* Stora ögonblick */
+    .moment { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; text-align: center; background: var(--hi); color: var(--bg); clip-path: circle(0% at 50% 50%); transition: clip-path 0.9s var(--ease); pointer-events: none; }
+    .moment.on { clip-path: circle(150% at 50% 50%); }
+    .moment .big { font-family: var(--display); font-weight: 800; text-transform: uppercase; font-size: 12vw; line-height: 0.9; }
+    .moment .sub { font-size: 2.6vw; margin-top: 2vw; font-family: var(--display); font-weight: 700; text-transform: uppercase; }
+    .moment .small2 { font-size: 1.5vw; margin-top: 1.2vw; }
+    .moment.on .big { animation: slam 0.9s var(--spring) 0.25s both; }
+    @keyframes slam { from { transform: scale(2.2); opacity: 0; } }
+
+    .hint { position: fixed; right: 1vw; bottom: 0.4vw; font-size: 0.8vw; color: var(--faint); opacity: 0; transition: opacity 0.3s; }
+    body.mouse .hint { opacity: 1; }
+    .demo-bar { position: fixed; top: 0; left: 0; right: 0; z-index: 5; font-size: 0.8vw; padding: 0.3vw; }
+  </style>
+</head>
+<body>
+  <div id="demo"></div>
+  <div class="screen">
+    <header class="sb-top" id="top"></header>
+    <main class="stage" id="stage" aria-live="polite"></main>
+    <footer><div class="ticker" id="ticker"></div><div class="dots" id="dots" aria-hidden="true"></div></footer>
+  </div>
+  <div class="moment" id="moment" aria-live="assertive"></div>
+  <div class="hint">← → byt vy · mellanslag pausa · F helskärm</div>
+  <script type="module" src="storbild.js"></script>
+</body>
+</html>

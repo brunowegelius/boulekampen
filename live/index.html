@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#093000">
+  <meta name="description" content="Tabell, resultat och slutspel från Boulekampen — live.">
+  <link rel="icon" href="../favicon.ico" sizes="any">
+  <link rel="icon" href="../assets/favicon/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="../assets/favicon/apple-touch-icon.png">
+  <title>Live · Boulekampen</title>
+  <link rel="stylesheet" href="../app/ui.css">
+  <style>
+    .wrap { max-width: 1120px; margin: 0 auto; padding: 0 var(--pad) 80px; }
+
+    header.head {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: clamp(16px, 3vw, 32px);
+      align-items: center;
+      padding: clamp(18px, 4vw, 40px) 0 clamp(18px, 3vw, 30px);
+    }
+    header.head .logo { width: clamp(64px, 15vw, 150px); }
+    header.head h1 { font-size: clamp(20px, 5.6vw, 58px); overflow-wrap: break-word; hyphens: auto; }
+    header.head .sub { margin-top: 10px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; color: var(--muted); font-size: 14px; }
+    .co-logo { max-height: 34px; max-width: 140px; object-fit: contain; }
+
+    .announce {
+      display: flex; gap: 12px; align-items: center;
+      padding: 14px 18px; border-radius: 14px;
+      background: var(--hi-soft); color: var(--hi);
+      margin-bottom: 18px; font-size: 16px;
+      animation: drop 0.6s var(--ease);
+    }
+    @keyframes drop { from { transform: translateY(-10px); opacity: 0; } }
+    .announce svg { flex-shrink: 0; }
+
+    /* Mitt lag */
+    .mine {
+      display: grid; gap: 18px;
+      padding: clamp(18px, 3vw, 28px);
+      border-radius: 22px;
+      box-shadow: inset 0 0 0 1.5px var(--line);
+      margin-bottom: 26px;
+      position: relative;
+      overflow: hidden;
+    }
+    .mine.is-live { box-shadow: inset 0 0 0 2px var(--hi); }
+    .mine .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .mine .who { font-family: var(--display); font-weight: 800; text-transform: uppercase; font-size: clamp(18px, 4vw, 28px); }
+    .mine .change { font-size: 13px; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
+    .mine .next { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 16px; }
+    .mine .next div { display: grid; gap: 2px; }
+    .mine .next .num { font-size: clamp(26px, 6vw, 44px); line-height: 1; }
+    .mine .next span:last-child { font-size: 13px; color: var(--muted); }
+    .mine .vs { font-size: 17px; }
+    .mine .vs b { font-weight: normal; color: var(--hi); }
+    .mine.pick { text-align: left; transition: box-shadow 0.25s; }
+    .mine.pick:hover { box-shadow: inset 0 0 0 1.5px var(--ink); }
+
+    .tabs { position: sticky; top: 0; z-index: 10; background: var(--bg); padding: 10px 0; margin-bottom: 18px; }
+
+    .cols { display: grid; gap: 18px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); }
+    .block h2 { margin-bottom: 10px; display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+    .block h2 small { font-family: var(--body); font-weight: normal; font-size: 13px; text-transform: none; color: var(--faint); letter-spacing: 0; }
+
+    .slot-t { font-family: var(--display); font-weight: 800; color: var(--hi); font-size: 18px; margin: 26px 0 2px; display: flex; gap: 12px; align-items: baseline; }
+    .slot-t:first-child { margin-top: 0; }
+    .slot-t small { font-family: var(--body); font-weight: normal; font-size: 13px; color: var(--faint); }
+
+    .winner {
+      text-align: center;
+      padding: clamp(28px, 6vw, 60px) 20px;
+      border-radius: 24px;
+      background: var(--hi);
+      color: var(--bg);
+      margin-bottom: 26px;
+      clip-path: inset(0 0 0 0 round 24px);
+      animation: wipe 1.1s var(--ease) both;
+    }
+    @keyframes wipe { from { clip-path: inset(0 100% 0 0 round 24px); } }
+    .winner p { font-size: 15px; }
+    .winner h2 { font-size: clamp(30px, 8vw, 72px); margin-top: 8px; font-weight: 800; }
+
+    .vote-list { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); }
+    .vote {
+      text-align: left; padding: 16px 18px; border-radius: 16px;
+      box-shadow: inset 0 0 0 1.5px var(--line);
+      display: grid; gap: 4px;
+      transition: box-shadow 0.2s, background 0.2s, transform 0.25s var(--ease);
+    }
+    .vote:hover { box-shadow: inset 0 0 0 1.5px var(--ink); }
+    .vote:active { transform: scale(0.98); }
+    .vote b { font-family: var(--display); text-transform: uppercase; font-size: 14px; }
+    .vote span { font-size: 14px; color: var(--muted); }
+    .vote[aria-pressed="true"] { background: var(--hi); color: var(--bg); box-shadow: none; }
+    .vote[aria-pressed="true"] span { color: var(--bg); }
+    .vote[disabled] { opacity: 0.4; }
+
+    .picker { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); max-height: 60vh; overflow: auto; }
+    .picker button { text-align: left; padding: 12px 14px; border-radius: 12px; background: var(--raise); transition: background 0.2s; }
+    .picker button:hover { background: var(--raise-2); }
+
+    .events-list a { display: flex; justify-content: space-between; padding: 18px 4px; border-top: 1px solid var(--line); text-decoration: none; font-family: var(--display); text-transform: uppercase; font-weight: 700; transition: padding 0.3s var(--ease), color 0.2s; }
+    .events-list a:hover { padding-left: 12px; color: var(--hi); }
+
+    footer.foot { margin-top: 48px; font-size: 13px; color: var(--faint); display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    footer.foot a { color: var(--muted); }
+  </style>
+</head>
+<body>
+  <div id="demo"></div>
+  <div class="wrap" id="app"><p class="muted" style="padding:40px 0">Laddar …</p></div>
+  <script type="module" src="live.js"></script>
+</body>
+</html>
