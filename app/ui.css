@@ -38,7 +38,7 @@
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-html { -webkit-text-size-adjust: 100%; }
+html { -webkit-text-size-adjust: 100%; overflow-x: clip; }
 body {
   background: var(--bg);
   color: var(--ink);
@@ -72,7 +72,11 @@ img, svg { display: block; max-width: 100%; }
   line-height: 1.02;
   letter-spacing: -0.01em;
 }
-h1 { font-size: clamp(28px, 6vw, 64px); font-weight: 800; color: var(--hi); }
+h1 { font-size: clamp(28px, 6vw, 64px); font-weight: 800; color: var(--hi); overflow-wrap: break-word; hyphens: auto; }
+/* Rubriker med långa ord krymper så att ordet ryms på en rad i stället för
+   att brytas mitt i. --chars sätts av fitTitle() i ui.js. Panchang är bred:
+   ungefär 1,05 em per versal. */
+h1.fit { font-size: min(var(--max, 64px), calc((100vw - 2 * var(--pad) - var(--less, 0px)) / (var(--chars) * 1.06))); }
 h2 { font-size: clamp(18px, 2.6vw, 26px); font-weight: 700; }
 h3 { font-size: 15px; font-weight: 700; letter-spacing: 0.01em; }
 .muted { color: var(--muted); }
@@ -282,7 +286,8 @@ select option { background: var(--bg); }
   flex-wrap: wrap;
 }
 .rule { height: 1px; background: var(--line); border: 0; margin: 18px 0; }
-.stack { display: grid; gap: 14px; }
+.stack { display: grid; gap: 14px; grid-template-columns: minmax(0, 1fr); }
+.row > .input { flex: 1 1 140px; min-width: 0; }
 .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .spread { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .empty {
@@ -491,15 +496,28 @@ dialog.dlg {
   background: var(--bg);
   color: var(--ink);
   padding: 24px;
-  width: min(94vw, 520px);
-  max-height: 90vh;
+  width: min(calc(100vw - 32px), 520px);
+  max-width: none;
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
+  overscroll-behavior: contain;
   box-shadow: inset 0 0 0 1.5px var(--line), 0 30px 80px rgba(0, 0, 0, 0.5);
 }
+dialog.dlg.wide { width: min(calc(100vw - 32px), 760px); }
+@media (max-width: 560px) { dialog.dlg { padding: 20px 16px; } }
 dialog.dlg::backdrop { background: rgba(3, 18, 0, 0.72); backdrop-filter: blur(3px); }
 dialog.dlg[open] { animation: dlg-in 0.4s var(--ease); }
 @keyframes dlg-in { from { opacity: 0; transform: translateY(20px) scale(0.98); } }
 .dlg h2 { margin-bottom: 14px; }
 .dlg .actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; flex-wrap: wrap; }
+.dlg .actions .btn { flex: 0 1 auto; }
+@media (max-width: 420px) { .dlg .actions .btn { flex: 1 1 auto; } }
+
+/* Siffror skrivs in, inga spinnpilar — de tar plats och ser ut som skräp i smala fält */
+input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.field, .grid-2 > * { min-width: 0; }
 
 /* ── Demoläge ──────────────────────────────────────────────────────── */
 

@@ -6,8 +6,8 @@ import * as E from '../app/engine.js';
 import { db, liveEvent } from '../app/db.js';
 import { SITE_EVENT } from '../app/config.js';
 import {
-  esc, $, $$, on, toast, dialog, params, store, reveal, segment, flip, rollNumbers, deviceId, demoBar, fmtDate,
-  nameMap, resolvedMatches, groupTables, overallTable, standingsTable, playerTable, matchRow, bracket, nextFor, timerLeft, pageUrl,
+  esc, $, $$, on, toast, dialog, params, store, reveal, settle, segment, flip, rollNumbers, deviceId, demoBar, fmtDate,
+  nameMap, resolvedMatches, groupTables, overallTable, standingsTable, playerTable, matchRow, bracket, nextFor, timerLeft, pageUrl, fitTitle,
 } from '../app/ui.js';
 
 const app = $('#app');
@@ -61,7 +61,7 @@ function renderAll(update = false) {
     <header class="head rv">
       <i class="logo" aria-hidden="true"></i>
       <div>
-        <h1>${esc(ev.name)}</h1>
+        <h1 ${fitTitle(ev.name, { max: 58, less: 96 })}>${esc(ev.name)}</h1>
         <p class="sub">
           <span id="live-pill"></span>
           <span>${esc(fmtDate(ev.date, { weekday: 'long', day: 'numeric', month: 'long' }))}</span>
@@ -90,7 +90,7 @@ function renderAll(update = false) {
   const content = $('#content');
   flip(content, () => { content.innerHTML = tabBody(res); });
   rollNumbers(app);
-  reveal(app);
+  if (update) settle(app); else reveal(app);
 }
 
 function availableTabs(res) {
@@ -224,7 +224,8 @@ on(app, 'click', '[data-tab]', (e, el) => {
   const content = $('#content');
   content.innerHTML = tabBody(resolvedMatches(st()));
   rollNumbers(content);
-  reveal(content);
+  settle(content);
+  content.classList.remove('tab-in'); void content.offsetWidth; content.classList.add('tab-in');
 });
 
 on(app, 'click', '[data-act="pick"]', async () => {

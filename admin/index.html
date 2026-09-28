@@ -80,9 +80,9 @@
     .bigstats { display: flex; gap: clamp(20px, 5vw, 56px); flex-wrap: wrap; }
     .bigstats div { display: grid; }
     .bigstats .num { font-size: clamp(34px, 5vw, 56px); line-height: 1; color: var(--hi); }
-    .bigstats span:last-child { font-size: 13px; color: var(--muted); margin-top: 6px; }
+    .bigstats > div > span:last-child { font-size: 13px; color: var(--muted); margin-top: 6px; }
     .links { display: grid; gap: 10px; }
-    .link-card { display: grid; grid-template-columns: 72px 1fr; gap: 14px; align-items: center; padding: 10px; border-radius: 12px; background: rgba(0,0,0,.12); }
+    .link-card { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 14px; align-items: center; padding: 10px; border-radius: 12px; background: rgba(0,0,0,.12); }
     .link-card .qr { width: 72px; }
     .link-card b { font-family: var(--display); font-size: 13px; text-transform: uppercase; font-weight: 700; }
     .link-card .u { font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
@@ -95,7 +95,7 @@
     .ed-table th { text-align: left; font-weight: normal; font-size: 12px; color: var(--faint); padding: 0 6px 8px; white-space: nowrap; }
     .ed-table td { padding: 6px; border-top: 1px solid var(--line); vertical-align: middle; }
     .ed-table .input { min-height: 38px; padding: 7px 10px; font-size: 14px; }
-    .ed-table select.input { padding-right: 30px; }
+    .ed-table select.input, .pl-row select.input { padding-right: 28px; background-position: calc(100% - 16px) 50%, calc(100% - 11px) 50%; }
     .ed-table .w-name { min-width: 170px; }
     .ed-table .w-sm { width: 74px; }
     .scroll-x { overflow-x: auto; margin: 0 -4px; padding: 0 4px; }
@@ -128,7 +128,19 @@
     .est { display: flex; gap: 22px; flex-wrap: wrap; padding: 14px 16px; border-radius: 12px; background: rgba(0,0,0,.14); margin-top: 16px; }
     .est div { display: grid; }
     .est .num { font-size: 22px; }
-    .est span:last-child { font-size: 12px; color: var(--muted); }
+    .est > div > span:last-child { font-size: 12px; color: var(--muted); }
+
+    #tab.tab-in { animation: tab-in 0.4s var(--ease); }
+    @keyframes tab-in { from { opacity: 0; transform: translateY(8px); } }
+
+    /* Prislista */
+    .pl-head, .pl-row { display: grid; grid-template-columns: minmax(0, 1fr) 96px 104px 88px 40px; gap: 8px; align-items: center; }
+    .pl-head { font-size: 12px; color: var(--faint); margin-bottom: -4px; }
+    @media (max-width: 640px) {
+      .pl-head { display: none; }
+      .pl-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 84px 40px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+      .pl-row .pl-d { grid-column: 1 / -1; }
+    }
 
     /* Offert */
     .items td .input { min-width: 70px; }

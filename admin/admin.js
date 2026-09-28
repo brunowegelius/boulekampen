@@ -10,7 +10,7 @@ import { db, mode, liveEvent } from '../app/db.js';
 import {
   esc, $, $$, on, toast, dialog, confirmDlg, reveal, segment, rollNumbers, qr, store,
   slugify, randCode, fmtDate, kr, pageUrl, demoBar, nameMap, resolvedMatches, groupTables,
-  overallTable, standingsTable, playerTable, matchRow, bracket, sideName, timerLeft,
+  overallTable, standingsTable, playerTable, matchRow, bracket, sideName, timerLeft, fitTitle,
 } from '../app/ui.js';
 
 const app = $('#app');
@@ -104,28 +104,67 @@ async function render() {
   const r = route();
   if (r.view !== 'event' && S.live) { S.live.stop(); S.live = null; S.liveSlug = null; }
   try {
-    if (r.view === 'home') { crumbs([]); app.innerHTML = homeView(); }
+    if (r.view === 'home') { crumbs([]); paint(homeView(), 'home'); }
     else if (r.view === 'event') {
       if (S.liveSlug !== r.slug) await openEvent(r.slug);
       if (seq !== renderSeq) return;
-      if (!S.live || !S.live.state.event) { app.innerHTML = notFound('Evenemanget finns inte.'); return; }
+      if (!S.live || !S.live.state.event) { paint(notFound('Evenemanget finns inte.'), 'none'); return; }
       crumbs([[S.live.state.event.name]]);
-      app.innerHTML = eventView(r.tab);
+      paint(eventView(r.tab), 'e:' + S.live.state.event.id, r.tab);
     } else if (r.view === 'booking') {
       const b = S.bookings.find(x => x.id === r.id);
-      if (!b) { app.innerHTML = notFound('Bokningen finns inte.'); return; }
+      if (!b) { paint(notFound('Bokningen finns inte.'), 'none'); return; }
       crumbs([[b.company || 'Ny bokning']]);
-      app.innerHTML = bookingView(b, r.tab);
+      paint(bookingView(b, r.tab), 'b:' + b.id, r.tab);
     }
   } catch (err) {
     console.error(err);
-    app.innerHTML = `<div class="empty"><strong>Något gick fel</strong>${esc(err.message)}</div>`;
+    paint(`<div class="empty"><strong>Något gick fel</strong>${esc(err.message)}</div>`, 'error');
   }
-  afterRender();
 }
 
-function afterRender() {
-  reveal(app);
+/**
+ * Lägger in en vy. Första gången en sida visas körs load-in-animationen.
+ * Därefter — flikbyten och data som kommer in live — byts bara det som
+ * ändrats: rubriken, flikarnas läge och innehållet under flikarna. Då
+ * spelas intro-animationen inte om och flikindikatorn glider från där
+ * den stod.
+ */
+function paint(html, key, tab = '') {
+  const same = app.dataset.key === key && $('#tab', app);
+  if (!same) {
+    app.innerHTML = html;
+    app.dataset.key = key;
+    app.dataset.pane = tab;
+    afterRender(true);
+    return;
+  }
+  const next = document.createElement('div');
+  next.innerHTML = html;
+  const swap = sel => { const a = $(sel, app), b = $(sel, next); if (a && b && a.innerHTML !== b.innerHTML) a.innerHTML = b.innerHTML; };
+  swap('.hero');
+  const oldSeg = $('.tabs-wrap .seg', app), newSeg = $('.tabs-wrap .seg', next);
+  const oldBtns = oldSeg ? $$('button', oldSeg) : [], newBtns = newSeg ? $$('button', newSeg) : [];
+  if (oldBtns.length === newBtns.length) {
+    oldBtns.forEach((b, i) => {
+      if (b.textContent !== newBtns[i].textContent) b.textContent = newBtns[i].textContent;
+      b.setAttribute('aria-selected', newBtns[i].getAttribute('aria-selected'));
+    });
+  } else if (oldSeg && newSeg) oldSeg.innerHTML = newSeg.innerHTML;
+  const body = $('#tab', app);
+  body.innerHTML = $('#tab', next).innerHTML;
+  if (app.dataset.pane !== tab) {
+    body.classList.remove('tab-in');
+    void body.offsetWidth;
+    body.classList.add('tab-in');
+    app.dataset.pane = tab;
+  }
+  afterRender(false);
+}
+
+function afterRender(first) {
+  if (first) reveal(app);
+  else $$('.rv', app).forEach(el => el.classList.add('in'));
   $$('.seg', app).forEach(segment);
   rollNumbers(app);
   $$('[data-qr]', app).forEach(el => qr(el, el.dataset.qr));
@@ -223,7 +262,7 @@ function eventView(tab) {
   return `
   <div class="hero rv">
     <div>
-      <h1>${esc(ev.name)}</h1>
+      <h1 ${fitTitle(ev.name)}>${esc(ev.name)}</h1>
       <p class="sub">
         <span>${esc(fmtDate(ev.date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) || 'Datum ej satt')}</span>
         ${ev.venue ? `<span>${esc(ev.venue)}</span>` : ''}
@@ -770,7 +809,7 @@ function bookingView(b, tab) {
   const cl = b.checklist || [];
   return `<div class="hero rv">
     <div>
-      <h1>${esc(b.company || 'Ny bokning')}</h1>
+      <h1 ${fitTitle(b.company || 'Ny bokning')}>${esc(b.company || 'Ny bokning')}</h1>
       <p class="sub"><span>${esc(fmtDate(b.date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) || 'Datum ej satt')}</span>
         ${b.participants ? `<span>${b.participants} deltagare</span>` : ''}
         <span class="pill line">${BSTATUS.find(([k]) => k === b.status)?.[1] || ''}</span>
@@ -1036,15 +1075,17 @@ A['new-booking'] = async () => {
 
 A['pricelist'] = async () => {
   const pl = S.pricelist;
-  const r = await dialog(`<form method="dialog" class="stack" style="min-width:min(80vw,640px)">
+  const r = await dialog(`<form method="dialog" class="stack">
     <h2>Prislista</h2>
-    <p class="small muted">Standardrader för offerterna. Pris ex moms.</p>
-    <div id="pl-rows" class="stack">${pl.map(p => plRow(p)).join('')}</div>
+    <p class="small muted">Standardrader för offerterna. Pris i kronor ex moms.</p>
+    <div class="pl-head" aria-hidden="true"><span>Beskrivning</span><span>Per</span><span>Pris</span><span>Moms</span><span></span></div>
+    <div id="pl-rows" class="stack" style="gap:10px">${pl.map(p => plRow(p)).join('')}</div>
     <button type="button" class="btn ghost sm" data-add style="justify-self:start">Ny rad</button>
     <div class="actions"><button class="btn ghost" data-close="">Avbryt</button><button class="btn" value="ok">Spara</button></div>
   </form>`, {
+    wide: true,
     onOpen(d) {
-      on(d, 'click', '[data-add]', () => $('#pl-rows', d).insertAdjacentHTML('beforeend', plRow({ d: '', unit: 'person', price: 0, vat: 25 })));
+      on(d, 'click', '[data-add]', () => { $('#pl-rows', d).insertAdjacentHTML('beforeend', plRow({ d: '', unit: 'person', price: 0, vat: 25 })); $('#pl-rows .pl-row:last-child input', d).focus(); });
       on(d, 'click', '[data-rm]', (e, el) => el.closest('.pl-row').remove());
     },
   });
@@ -1060,10 +1101,10 @@ A['pricelist'] = async () => {
   toast('Prislistan är sparad');
 };
 function plRow(p) {
-  return `<div class="pl-row" style="display:grid;grid-template-columns:1fr 90px 100px 80px 36px;gap:8px;align-items:center">
-    <input class="input" name="d" value="${esc(p.d)}" placeholder="Beskrivning" aria-label="Beskrivning">
-    <input class="input" name="unit" value="${esc(p.unit)}" placeholder="per" aria-label="Enhet">
-    <input class="input" name="price" type="number" min="0" value="${p.price}" aria-label="Pris">
+  return `<div class="pl-row">
+    <input class="input pl-d" name="d" value="${esc(p.d)}" placeholder="Beskrivning" aria-label="Beskrivning">
+    <input class="input" name="unit" value="${esc(p.unit)}" placeholder="person" aria-label="Per">
+    <input class="input" name="price" type="number" min="0" inputmode="numeric" value="${p.price}" aria-label="Pris ex moms">
     <select class="input" name="vat" aria-label="Moms">${[25, 12, 6, 0].map(v => `<option value="${v}" ${Number(p.vat) === v ? 'selected' : ''}>${v} %</option>`).join('')}</select>
     <button type="button" class="icon-btn" data-rm aria-label="Ta bort raden"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
   </div>`;

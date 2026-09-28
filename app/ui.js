@@ -42,10 +42,10 @@ export function toast(msg, kind = '') {
 
 /* ── Dialoger ──────────────────────────────────────────────────────── */
 
-export function dialog(inner, { onOpen } = {}) {
+export function dialog(inner, { onOpen, wide = false } = {}) {
   return new Promise(resolve => {
     const d = document.createElement('dialog');
-    d.className = 'dlg';
+    d.className = 'dlg' + (wide ? ' wide' : '');
     d.innerHTML = inner;
     document.body.appendChild(d);
     d.addEventListener('close', () => { resolve(d.returnValue ? { value: d.returnValue, form: d.querySelector('form') } : null); d.remove(); });
@@ -91,16 +91,30 @@ export function reveal(root = document) {
   setTimeout(() => els.forEach(el => el.classList.add('in')), 1600);
 }
 
+/** Visar .rv-element direkt utan animation — för omritningar av en sida som redan visas. */
+export function settle(root = document) {
+  $$('.rv:not(.in)', root).forEach(el => el.classList.add('in'));
+}
+
 /* ── Segmenterade flikar ───────────────────────────────────────────── */
 
 export function segment(seg) {
   if (!seg) return;
   let ind = seg.querySelector('.seg-ind');
-  if (!ind) { ind = document.createElement('span'); ind.className = 'seg-ind'; seg.prepend(ind); }
+  const fresh = !ind;
+  if (fresh) { ind = document.createElement('span'); ind.className = 'seg-ind'; seg.prepend(ind); }
   const cur = seg.querySelector('[aria-selected="true"]');
   if (!cur) { ind.style.width = '0'; return; }
+  // En ny indikator hoppar direkt till sin plats — den ska bara glida vid byten
+  if (fresh) ind.style.transition = 'none';
   ind.style.width = cur.offsetWidth + 'px';
   ind.style.transform = `translateX(${cur.offsetLeft}px)`;
+  if (fresh) { void ind.offsetWidth; ind.style.transition = ''; }
+  // På smala skärmar scrollar flikraden: håll den valda fliken synlig
+  if (seg.scrollWidth > seg.clientWidth + 2) {
+    const left = cur.offsetLeft - (seg.clientWidth - cur.offsetWidth) / 2;
+    seg.scrollTo({ left: Math.max(0, left), behavior: fresh || reduced() ? 'auto' : 'smooth' });
+  }
 }
 
 /* ── FLIP: rader glider till sin nya plats ─────────────────────────── */
@@ -140,6 +154,7 @@ export function rollNumbers(root = document) {
 /* ── QR-koder ──────────────────────────────────────────────────────── */
 
 let qrLib;
+const qrCache = new Map();
 function loadQr() {
   if (!qrLib) {
     qrLib = new Promise((res, rej) => {
@@ -154,6 +169,9 @@ function loadQr() {
 }
 /** Ritar en QR-kod som SVG i el. Mörka moduler i --ink/--bg beroende på bakgrund. */
 export async function qr(el, text, { dark = '#093000', light = '#f1ffe7' } = {}) {
+  const ck = text + dark + light;
+  // Från cachen direkt — annars blinkar koden vid varje omritning
+  if (qrCache.has(ck)) { el.innerHTML = qrCache.get(ck); return; }
   try {
     const q = (await loadQr())(0, 'M');
     q.addData(text);
@@ -161,7 +179,9 @@ export async function qr(el, text, { dark = '#093000', light = '#f1ffe7' } = {})
     const n = q.getModuleCount();
     let d = '';
     for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (q.isDark(r, c)) d += `M${c + 2} ${r + 2}h1v1h-1z`;
-    el.innerHTML = `<svg viewBox="0 0 ${n + 4} ${n + 4}" shape-rendering="crispEdges" role="img" aria-label="QR-kod till ${esc(text)}"><rect width="100%" height="100%" fill="${light}" rx="1.5"/><path d="${d}" fill="${dark}"/></svg>`;
+    const svg = `<svg viewBox="0 0 ${n + 4} ${n + 4}" shape-rendering="crispEdges" role="img" aria-label="QR-kod till ${esc(text)}"><rect width="100%" height="100%" fill="${light}" rx="1.5"/><path d="${d}" fill="${dark}"/></svg>`;
+    qrCache.set(ck, svg);
+    el.innerHTML = svg;
   } catch (e) {
     el.innerHTML = `<p class="small muted">${esc(text)}</p>`;
   }
@@ -200,6 +220,12 @@ export function fmtDate(d, opts = { weekday: 'short', day: 'numeric', month: 'sh
   if (!d) return '';
   const x = new Date(d + (String(d).length === 10 ? 'T12:00:00' : ''));
   return isNaN(x) ? '' : x.toLocaleDateString('sv-SE', opts);
+}
+
+/** Attribut för h1.fit: längsta ordet styr storleken. */
+export function fitTitle(text, { max = 64, less = 0 } = {}) {
+  const longest = Math.max(4, ...String(text || '').split(/\s+/).map(w => w.length));
+  return `class="fit" style="--chars:${longest};--max:${max}px;--less:${less}px"`;
 }
 
 export const kr = n => (Math.round(Number(n) || 0)).toLocaleString('sv-SE') + ' kr';

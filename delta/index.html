@@ -51,7 +51,7 @@
       }
       app.innerHTML = `
         <i class="logo rv" aria-hidden="true"></i>
-        <h1 class="rv">${esc(ev.company ? 'Hej ' + ev.company + '!' : ev.name)}</h1>
+        <h1 class="rv fit" style="--chars:${Math.max(4, ...(ev.company ? 'Hej ' + ev.company + '!' : ev.name).split(/\s+/).map(w => w.length))};--max:48px">${esc(ev.company ? 'Hej ' + ev.company + '!' : ev.name)}</h1>
         <p class="lead rv">Skriv in dig så hamnar du i ett lag. ${esc([fmtDate(ev.date, { weekday: 'long', day: 'numeric', month: 'long' }), ev.venue].filter(Boolean).join(', '))}.</p>
         <form id="f" class="rv" novalidate>
           <label class="field"><span>Ditt namn</span><input name="name" required maxlength="60" autocomplete="name" placeholder="T.ex. Maja B."></label>
